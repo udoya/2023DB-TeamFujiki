@@ -4,5 +4,16 @@ public class BidOnResponse {
     public int price;
     public int user_id;
     public int time;
-    // 入札が失敗した場合(現在の価格を下回る入札金額)は全てのフィールドを0とする
+
+    public void setPrice(int price) {
+        this.price = price;
+    }
+
+    public void setTime(int time) {
+        this.time = time;
+    }
+
+    public void setUser_id(int user_id) {
+        this.user_id = user_id;
+    }
 }

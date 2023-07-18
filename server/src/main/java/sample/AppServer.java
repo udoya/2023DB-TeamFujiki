@@ -49,7 +49,7 @@ public class AppServer {
                     e.printStackTrace();
                 }
 
-                member = member++; // クライアント接続時にインスタンス変数を増やす
+                // member++; // クライアント接続時にインスタンス変数を増やす
                 System.out.println("Client connected. Current members: " + member);
                 NotifyNumOfParticipantsResponse notify = new NotifyNumOfParticipantsResponse();
                 notify.number = member;
@@ -71,7 +71,7 @@ public class AppServer {
                     e.printStackTrace();
                 }
 
-                member--; // クライアント切断時にインスタンス変数を減らす
+                // member--; // クライアント切断時にインスタンス変数を減らす
                 System.out.println("Client disconnected. Current members: " + member);
                 NotifyNumOfParticipantsResponse notify = new NotifyNumOfParticipantsResponse();
                 notify.number = member;

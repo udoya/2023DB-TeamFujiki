@@ -1,0 +1,77 @@
+{
+    "app.users": {
+      "transaction": true,
+      "partition-key": [
+        "user_id"
+      ],
+      "clustering-key": [],
+      "columns": {
+        "user_id": "INT",
+        "user_name": "TEXT"
+      },
+      "secondary-index": [
+        "user_name"
+    ]},
+    "app.items": {
+        "transaction": true,
+        "partition-key": [
+          "user_id"
+        ],
+        "clustering-key": [
+            "item_id"
+        ],
+        "columns": {
+          "item_id": "INT",
+          "item_name": "TEXT",
+          "user_id": "INT",
+          "is_sold": "BOOLEAN"
+        }
+      },
+      "app.purchases": {
+        "transaction": true,
+        "partition-key": [
+            "user_id"
+        ],
+        "clustering-key": [
+            "purchase_id"
+        ],
+        "columns": {
+          "purchase_id": "INT",
+          "user_id": "INT",
+          "auction_id": "INT",
+          "item_name": "TEXT",
+          "price": "INT"
+        }
+      },
+      "app.auctions": {
+        "transaction": true,
+        "partition-key": [
+            "auction_id"
+        ],
+        "clustering-key": [],
+        "columns": {
+          "auction_id": "INT",
+          "user_id": "INT",
+          "item_id": "INT",
+          "attendee_count": "INT",
+          "start_time": "BIGINT"
+        }
+      },
+      "app.bids": {
+        "transaction": true,
+        "partition-key": [
+            "auction_id"
+        ],
+        "clustering-key": [
+            "bid_id"
+        ],
+        "columns": {
+          "bid_id": "INT",
+          "auction_id": "INT",
+          "user_id": "INT",
+          "price": "INT",
+          "time": "BIGINT"
+        }
+      }
+  }
+  

@@ -1,0 +1,181 @@
+{"users":[{
+    "user_id": 1,
+    "user_name": "John"
+},{
+    "user_id": 2,
+    "user_name": "Bob"
+},{
+    "user_id": 3,
+    "user_name": "Emma"
+}],
+"items":[{
+    "user_id": 1,
+    "item_id": 1,
+    "item_name": "Painting: Sunset on the Beach",
+    "is_sold": 1
+},{
+    "user_id": 1,
+    "item_id": 2,
+    "item_name": "Antique Pocket Watch: Gold-plated",
+    "is_sold": 0
+},{
+    "user_id": 1,
+    "item_id": 3,
+    "item_name": "Sports Memorabilia: Signed Baseball",
+    "is_sold": 0
+},{
+    "user_id": 2,
+    "item_id": 1,
+    "item_name": "Jewelry Set: Diamond Necklace and Earrings",
+    "is_sold": 1
+},{
+    "user_id": 2,
+    "item_id": 2,
+    "item_name": "Vintage Vinyl Records: Classic Rock Collection",
+    "is_sold": 1
+},{
+    "user_id": 2,
+    "item_id": 3,
+    "item_name": "Rare Stamp Collection: Worldwide Edition",
+    "is_sold": 0
+},{
+    "user_id": 3,
+    "item_id": 1,
+    "item_name": "Automobile: Vintage Convertible Car",
+    "is_sold": 0
+},{
+    "user_id": 3,
+    "item_id": 2,
+    "item_name": "Art Deco Furniture: Dining Table and Chairs",
+    "is_sold": 0
+},{
+    "user_id": 3,
+    "item_id": 3,
+    "item_name": "Collectible Coins: Ancient Roman Empire Set",
+    "is_sold": 0
+}],
+"purchases":[{
+    "user_id": 1,
+    "purchase_id": 1,
+    "auction_id": 1,
+    "item_name": "Jewelry Set: Diamond Necklace and Earrings",
+    "price": 100000
+},{
+    "user_id": 3,
+    "purchase_id": 1,
+    "auction_id": 2,
+    "item_name": "Vintage Vinyl Records: Classic Rock Collection",
+    "price": 5555555
+},{
+    "user_id": 3,
+    "purchase_id": 2,
+    "auction_id": 3,
+    "item_name": "Painting: Sunset on the Beach",
+    "price": 5453432
+}],
+"auctions":[{
+    "auction_id": 1,
+    "user_id": 2,
+    "item_id": 1,
+    "attendee_count": 2,
+    "start_time": 1689415200000
+},{
+    "auction_id": 2,
+    "user_id": 2,
+    "item_id": 2,
+    "attendee_count": 2,
+    "start_time": 1689420600000
+},{
+    "auction_id": 3,
+    "user_id": 1,
+    "item_id": 1,
+    "attendee_count": 2,
+    "start_time": 1689426000000
+}
+
+],
+"bids":[{
+    "bid_id": 1,
+    "auction_id": 1,
+    "user_id": 1,
+    "price": 10000,
+    "time": 1689415500000
+},{
+    "bid_id": 2,
+    "auction_id": 1,
+    "user_id": 3,
+    "price": 15000,
+    "time": 1689415650000
+},{
+    "bid_id": 3,
+    "auction_id": 1,
+    "user_id": 3,
+    "price": 15000,
+    "time": 1689415650000
+},{
+    "bid_id": 1,
+    "auction_id": 2,
+    "user_id": 1,
+    "price": 50000,
+    "time": 1689420920000
+},{
+    "bid_id": 2,
+    "auction_id": 2,
+    "user_id": 3,
+    "price": 70000,
+    "time": 1689421245000
+},{
+    "bid_id": 3,
+    "auction_id": 2,
+    "user_id": 1,
+    "price": 100000,
+    "time": 1689421530000
+},{
+    "bid_id": 4,
+    "auction_id": 2,
+    "user_id": 3,
+    "price": 120000,
+    "time": 1689421810000
+},{
+    "bid_id": 5,
+    "auction_id": 2,
+    "user_id": 1,
+    "price": 1500000,
+    "time": 1689422100000
+},{
+    "bid_id": 6,
+    "auction_id": 2,
+    "user_id": 3,
+    "price": 5555555,
+    "time": 1689422101000
+},{
+    "bid_id": 1,
+    "auction_id": 3,
+    "user_id": 3,
+    "price": 80000,
+    "time": 1689422740000
+},{
+    "bid_id": 2,
+    "auction_id": 3,
+    "user_id": 2,
+    "price": 100000,
+    "time": 1689423025000
+},{
+    "bid_id": 3,
+    "auction_id": 3,
+    "user_id": 3,
+    "price": 150000,
+    "time": 1689423350000
+},{
+    "bid_id": 4,
+    "auction_id": 3,
+    "user_id": 2,
+    "price": 200000,
+    "time": 1689423615000
+},{
+    "bid_id": 5,
+    "auction_id": 3,
+    "user_id": 3,
+    "price": 5453432,
+    "time": 1689423930000
+}]}

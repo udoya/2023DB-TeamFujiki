@@ -20,5 +20,11 @@ dependencies {
 
 }
 
+configurations.all {
+    resolutionStrategy {
+        force 'io.netty:netty-all:4.1.63.Final' // これは適切なバージョンに置き換えてください。
+    }
+}
+
 sourceCompatibility = 1.8 
 targetCompatibility = 1.8 

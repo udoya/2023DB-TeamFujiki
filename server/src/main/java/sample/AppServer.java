@@ -181,6 +181,8 @@ public class AppServer {
                             }
                         }
                     }, 0, 1, TimeUnit.SECONDS);
+
+                    // add member
                 } else {
                     r_hands.setItem_id(0);
                     r_hands.setItem_name("");

@@ -402,7 +402,7 @@ public class ScalarOperations {
                         .table("bids")
                         .partitionKey(Key.ofInt("bid_id", results.get(0).getInt("bid_id") + 1))
                         .clusteringKey(Key.ofInt("auction_id", auction_id))
-                        .intValue("start_time", 1)
+                        .intValue("start_time", 0)
                         .build();
 
                 tx.put(put);

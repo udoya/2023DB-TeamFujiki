@@ -3,6 +3,7 @@ package sample;
 import java.io.File;
 import java.util.Optional;
 import com.scalar.db.api.Result;
+import com.scalar.db.exception.transaction.TransactionException;
 
 import classes.*;
 
@@ -72,53 +73,74 @@ public class AppServer {
             @Override
             public void onData(SocketIOClient client, RaiseHandsRequest data, AckRequest ackRequest) {
 
-                // TODO if succeed;
-                // server.getBroadcastOperations().sendEvent("RAISE_HAND", data);
+                int succeed = -1;
                 RaiseHandsResponse r_hands = new RaiseHandsResponse();
 
-                // TODO get from DB
-                r_hands.item_id = 1;
-                r_hands.item_name = "aa";
-                r_hands.user_id = 1;
+                try {
+                    succeed = scalar.startAuction(data.item_id, data.user_id);
+                } catch (TransactionException e) {
+                    // TODO Auto-generated catch block
+                    succeed = -1;
+                    e.printStackTrace();
+                }
 
-                time = 120;
-                ScheduledExecutorService execService = Executors.newScheduledThreadPool(1);
-                execService.scheduleAtFixedRate(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (time > 0) {
-                            time--;
-                        } else {
-                            SuccessfulBidResponse success_bid = new SuccessfulBidResponse();
+                if (succeed != -1) {
 
-                            // TODO get from DB
-                            success_bid.price = 100;
-                            success_bid.user_id = 1;
-
-                            server.getBroadcastOperations().sendEvent("SUCCESSFUL_BID", success_bid);
-                            execService.shutdown();
-                        }
+                    try {
+                        r_hands.item_id = data.item_id;
+                        r_hands.item_name = (String) scalar.getItem(data.user_id, data.item_id).get("item_name");
+                        r_hands.user_id = data.user_id;
+                    } catch (TransactionException e) {
+                        e.printStackTrace();
+                        System.out.println("error!");
                     }
-                }, 0, 1, TimeUnit.SECONDS);
+
+                    server.getBroadcastOperations().sendEvent("RAISE_HANDS", r_hands);
+
+                    time = 120;
+                    ScheduledExecutorService execService = Executors.newScheduledThreadPool(1);
+                    execService.scheduleAtFixedRate(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (time > 0) {
+                                time--;
+                            } else {
+                                SuccessfulBidResponse success_bid = new SuccessfulBidResponse();
+
+                                // TODO get from DB
+                                success_bid.price = 100;
+                                success_bid.user_id = 1;
+
+                                server.getBroadcastOperations().sendEvent("SUCCESSFUL_BID", success_bid);
+                                execService.shutdown();
+                            }
+                        }
+                    }, 0, 1, TimeUnit.SECONDS);
+                } else {
+                    r_hands.item_id = 0;
+                    r_hands.item_name = "";
+                    r_hands.user_id = 0;
+                    server.getBroadcastOperations().sendEvent("RAISE_HANDS", r_hands);
+                }
 
             }
         });
         server.addEventListener("BID-ON", BidOnRequest.class, new DataListener<BidOnRequest>() {
             @Override
             public void onData(SocketIOClient client, BidOnRequest data, AckRequest ackRequest) {
-                // server.getBroadcastOperations().sendEvent("BID-ON", data);
+                // serverの時間タイムスタンプを使わない感じになってしまった.....
+                BidOnResponse bidResp = new BidOnResponse();
+                int succeed = -1;
+
+                // TODO BID in DB
+
+                bidResp.price = data.price;
+                bidResp.user_id = data.user_id;
+                bidResp.time = time;
+
+                server.getBroadcastOperations().sendEvent("BID-ON", bidResp);
             }
         });
-
-        server.addEventListener("NOTIFY_NUM_OF_PARTICIPANTS", NotifyNumOfParticipantsResponse.class,
-                new DataListener<NotifyNumOfParticipantsResponse>() {
-                    @Override
-                    public void onData(SocketIOClient client, NotifyNumOfParticipantsResponse data,
-                            AckRequest ackRequest) {
-                        server.getBroadcastOperations().sendEvent("NOTIFY_NUM_OF_PARTICIPANTS",
-                                data);
-                    }
-                });
 
         server.start();
 

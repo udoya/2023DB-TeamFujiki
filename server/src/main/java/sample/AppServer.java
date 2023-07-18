@@ -63,10 +63,12 @@ public class AppServer {
         server.addEventListener("INIT_STATE", InitStateRequest.class, new DataListener<InitStateRequest>() {
             @Override
             public void onData(SocketIOClient client, InitStateRequest data, AckRequest ackRequest) {
+                InitStateResponse initResp = new InitStateResponse();
+
                 // scalar.getUserInfo(data.user_name);
                 // broadcastじゃない
                 // server.getBroadcastOperations().sendEvent("INIT_STATE", data);
-                client.sendEvent("INIT_STATE", data);
+                client.sendEvent("INIT_STATE", initResp);
             }
         });
         server.addEventListener("RAISE_HAND", RaiseHandsRequest.class, new DataListener<RaiseHandsRequest>() {
@@ -79,13 +81,11 @@ public class AppServer {
                 try {
                     succeed = scalar.startAuction(data.item_id, data.user_id);
                 } catch (TransactionException e) {
-                    // TODO Auto-generated catch block
                     succeed = -1;
                     e.printStackTrace();
                 }
 
                 if (succeed != -1) {
-
                     try {
                         r_hands.item_id = data.item_id;
                         r_hands.item_name = (String) scalar.getItem(data.user_id, data.item_id).get("item_name");
@@ -111,7 +111,11 @@ public class AppServer {
                                 success_bid.price = 100;
                                 success_bid.user_id = 1;
 
+                                // TODO
+                                // scalar.processWinningBid(auction_id, user_id, price);
+
                                 server.getBroadcastOperations().sendEvent("SUCCESSFUL_BID", success_bid);
+
                                 execService.shutdown();
                             }
                         }
@@ -133,7 +137,6 @@ public class AppServer {
                 int succeed = -1;
 
                 // TODO BID in DB
-
                 bidResp.price = data.price;
                 bidResp.user_id = data.user_id;
                 bidResp.time = time;

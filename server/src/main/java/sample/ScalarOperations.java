@@ -437,13 +437,13 @@ public class ScalarOperations {
             //bidsの中の一番大きい値をpurchaseに書き込み、itemsのis_soldを1に
             Map<String, Object> mapResult = new HashMap<String, Object>();
             List<Result> results;
-            Scan scan =
+            Scan scan1 =
                 Scan.newBuilder()
                     .namespace(NAMESPACE)
                     .table("auctions")
                     .all()
                     .build();
-            results = tx.scan(scan);
+            results = tx.scan(scan1);
             Result result = results.get(0);
             long max = result.getBigInt("start_time");
             for(int i=1;i<results.size();i++){
@@ -459,24 +459,24 @@ public class ScalarOperations {
                 Get.newBuilder()
                     .namespace(NAMESPACE)
                     .table("items")
-                    .partitionKey(Key.ofInt("user_id", result.get().getInt("user_id")))
-                    .clusteringKey(Key.ofInt("item_id", result.get().getInt("item_id")))
+                    .partitionKey(Key.ofInt("user_id", result.getInt("user_id")))
+                    .clusteringKey(Key.ofInt("item_id", result.getInt("item_id")))
                     .build();
             Optional<Result> item = tx.get(get);
             String item_name = item.get().getText("item_name");
 
-            Put put = 
+            Put put1 = 
                 Put.newBuilder()
                     .namespace(NAMESPACE)
                     .table("items")
-                    .partitionKey(Key.ofInt("user_id", result.get().getInt("user_id")))
-                    .clusteringKey(Key.ofInt("item_id", result.get().getInt("item_id")))
+                    .partitionKey(Key.ofInt("user_id", result.getInt("user_id")))
+                    .clusteringKey(Key.ofInt("item_id", result.getInt("item_id")))
                     .booleanValue("is_sold",true)
                     .build();
 
-            tx.put(put);
+            tx.put(put1);
 
-            Scan scan =
+            Scan scan2 =
                 Scan.newBuilder()
                     .namespace(NAMESPACE)
                     .table("bids")
@@ -484,14 +484,14 @@ public class ScalarOperations {
                     .orderings(Scan.Ordering.desc("price"))
                     .limit(1)
                     .build();
-            results = tx.scan(scan);
+            results = tx.scan(scan2);
             Result maxBid = results.get(0);
             int user_id = maxBid.getInt("user_id");
             int price = maxBid.getInt("price");
             mapResult.put("user_id",user_id);
             mapResult.put("price",price);
 
-            Put put = 
+            Put put2 = 
                 Put.newBuilder()
                     .namespace(NAMESPACE)
                     .table("purchases")
@@ -502,9 +502,10 @@ public class ScalarOperations {
                     .textValue("item_name",item_name)
                     .build();
 
-            tx.put(put);
+            tx.put(put2);
 
             tx.commit();
+            return mapResult;
         } catch (Exception e) {
             tx.abort();
             throw e;

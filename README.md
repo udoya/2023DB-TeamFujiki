@@ -1,6 +1,6 @@
 # 2023DB-TeamFujiki
 
-##Server
+## Server
 We use Cassandra
 ~~~
 cd ./server

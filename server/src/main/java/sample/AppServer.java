@@ -39,16 +39,15 @@ public class AppServer {
         server.addConnectListener(new ConnectListener() {
             @Override
             public void onConnect(SocketIOClient client) {
-                // TODO member get from DB
-                // int auction_id;
-                // try {
-                // auction_id = (int) scalar.getLatestAuction().get("auction_id");
-                // member = scalar.modifyAttendeeCount(auction_id);
-                // } catch (TransactionException e) {
-                // auction_id = -1;
-                // System.out.println("error!!!");
-                // e.printStackTrace();
-                // }
+                int auction_id;
+                try {
+                    auction_id = (int) scalar.getLatestAuction().get("auction_id");
+                    member = scalar.modifyAttendeeCount(auction_id, true);
+                } catch (TransactionException e) {
+                    auction_id = -1;
+                    System.out.println("error!!!");
+                    e.printStackTrace();
+                }
 
                 member = member++; // クライアント接続時にインスタンス変数を増やす
                 System.out.println("Client connected. Current members: " + member);
@@ -62,16 +61,15 @@ public class AppServer {
         server.addDisconnectListener(new DisconnectListener() {
             @Override
             public void onDisconnect(SocketIOClient client) {
-                // TODO member get from DB
-                // int auction_id;
-                // try {
-                // auction_id = (int) scalar.getLatestAuction().get("auction_id");
-                // member = scalar.modifyAttendeeCount(auction_id);
-                // } catch (TransactionException e) {
-                // auction_id = -1;
-                // System.out.println("error!!!");
-                // e.printStackTrace();
-                // }
+                int auction_id;
+                try {
+                    auction_id = (int) scalar.getLatestAuction().get("auction_id");
+                    member = scalar.modifyAttendeeCount(auction_id, false);
+                } catch (TransactionException e) {
+                    auction_id = -1;
+                    System.out.println("error!!!");
+                    e.printStackTrace();
+                }
 
                 member--; // クライアント切断時にインスタンス変数を減らす
                 System.out.println("Client disconnected. Current members: " + member);
@@ -87,7 +85,6 @@ public class AppServer {
             public void onData(SocketIOClient client, InitStateRequest data, AckRequest ackRequest) {
                 InitStateResponse initResp = new InitStateResponse();
 
-                // TODO get from DB
                 // items
                 int uid = userMap.get(data.user_name);
                 Map<String, Object> latestAuction = new HashMap<>();
@@ -108,12 +105,21 @@ public class AppServer {
 
                 initResp.setRemaining_time(time);
 
-                // TODO: what to do?
-                initResp.current_item.setItem_id(0);
-                initResp.current_item.setItem_name("");
-                initResp.current_item.history.setPrice(0);
-                initResp.current_item.history.setTime(0);
-                initResp.current_item.history.setUser_name(null);
+                // TODO: what to do? 入札履歴！
+
+                try {
+                    int auc_uid = (int) latestAuction.get("user_id");
+                    initResp.current_item.setItem_id((int) latestAuction.get("item_id"));
+                    initResp.current_item.setItem_name(
+                            (String) scalar.getItem(auc_uid, initResp.current_item.item_id)
+                                    .get("item_name"));
+                    // TODO
+                    initResp.current_item.history.setPrice(0);
+                    initResp.current_item.history.setTime(time);
+                    initResp.current_item.history.setUser_name((String) scalar.getUserInfo(auc_uid).get("user_name"));
+                } catch (TransactionException e) {
+                    e.printStackTrace();
+                }
 
                 boolean isEx = (uid == (int) latestAuction.get("user_id"));
                 initResp.setIs_exhibitor(isEx);
@@ -141,7 +147,7 @@ public class AppServer {
                     try {
                         r_hands.setItem_id(data.item_id);
                         r_hands.setItem_name((String) scalar.getItem(data.user_id, data.item_id).get("item_name"));
-                        r_hands.setUser_id(data.user_id);
+                        r_hands.setUser_name((String) scalar.getUserInfo(data.user_id).get("user_name"));
                         // r_hands.item_id = data.item_id;
                         // r_hands.item_name = (String) scalar.getItem(data.user_id,
                         // data.item_id).get("item_name");
@@ -163,15 +169,11 @@ public class AppServer {
                             } else {
                                 SuccessfulBidResponse success_bid = new SuccessfulBidResponse();
 
-                                // TODO get from DB
-                                success_bid.setPrice(100);
-                                success_bid.setUser_id(1);
-
-                                // success_bid.price = 100;
-                                // success_bid.user_id = 1;
-
-                                // TODO
-                                // scalar.processWinningBid(auction_id, user_id, price);
+                                try {
+                                    scalar.processWinningBid();
+                                } catch (TransactionException e) {
+                                    e.printStackTrace();
+                                }
 
                                 server.getBroadcastOperations().sendEvent("SUCCESSFUL_BID", success_bid);
 
@@ -182,7 +184,7 @@ public class AppServer {
                 } else {
                     r_hands.setItem_id(0);
                     r_hands.setItem_name("");
-                    r_hands.setUser_id(0);
+                    r_hands.setUser_name("");
                     // r_hands.item_id = 0;
                     // r_hands.item_name = "";
                     // r_hands.user_id = 0;
@@ -198,13 +200,21 @@ public class AppServer {
                 BidOnResponse bidResp = new BidOnResponse();
                 int succeed = -1;
 
-                // TODO BID in DB
+                int auction_id = -1;
+
                 bidResp.setPrice(data.price);
                 bidResp.setTime(time);
                 bidResp.setUser_id(data.user_id);
                 // bidResp.price = data.price;
                 // bidResp.user_id = data.user_id;
                 // bidResp.time = time;
+
+                try {
+                    auction_id = (int) scalar.getLatestAuction().get("auction_id");
+                    scalar.placeBid(auction_id, bidResp.user_id, bidResp.price);
+                } catch (TransactionException e) {
+                    e.printStackTrace();
+                }
 
                 server.getBroadcastOperations().sendEvent("BID-ON", bidResp);
             }

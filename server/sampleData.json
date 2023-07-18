@@ -12,47 +12,47 @@
     "user_id": 1,
     "item_id": 1,
     "item_name": "Painting: Sunset on the Beach",
-    "is_sold": 1
+    "is_sold": true
 },{
     "user_id": 1,
     "item_id": 2,
     "item_name": "Antique Pocket Watch: Gold-plated",
-    "is_sold": 0
+    "is_sold": false
 },{
     "user_id": 1,
     "item_id": 3,
     "item_name": "Sports Memorabilia: Signed Baseball",
-    "is_sold": 0
+    "is_sold": false
 },{
     "user_id": 2,
     "item_id": 1,
     "item_name": "Jewelry Set: Diamond Necklace and Earrings",
-    "is_sold": 1
+    "is_sold": true
 },{
     "user_id": 2,
     "item_id": 2,
     "item_name": "Vintage Vinyl Records: Classic Rock Collection",
-    "is_sold": 1
+    "is_sold": true
 },{
     "user_id": 2,
     "item_id": 3,
     "item_name": "Rare Stamp Collection: Worldwide Edition",
-    "is_sold": 0
+    "is_sold": false
 },{
     "user_id": 3,
     "item_id": 1,
     "item_name": "Automobile: Vintage Convertible Car",
-    "is_sold": 0
+    "is_sold": false
 },{
     "user_id": 3,
     "item_id": 2,
     "item_name": "Art Deco Furniture: Dining Table and Chairs",
-    "is_sold": 0
+    "is_sold": false
 },{
     "user_id": 3,
     "item_id": 3,
     "item_name": "Collectible Coins: Ancient Roman Empire Set",
-    "is_sold": 0
+    "is_sold": false
 }],
 "purchases":[{
     "user_id": 1,

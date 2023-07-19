@@ -16,6 +16,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import com.corundumstudio.socketio.*;
 import com.corundumstudio.socketio.listener.*;
 import com.corundumstudio.socketio.AckRequest;
 import com.corundumstudio.socketio.SocketIOClient;
@@ -57,11 +58,16 @@ public class AppServer {
         member = 0;
     }
 
-    public void start(SocketIOServer server) throws InterruptedException {
+    public void start() throws InterruptedException {
         // Hard codingで許してください
         userMap.put("John", 1);
         userMap.put("Bob", 2);
         userMap.put("Emma", 3);
+        scalar = new ScalarOperations();
+        Configuration config = new Configuration();
+        config.setHostname("localhost");
+        config.setPort(9092);
+        SocketIOServer server = new SocketIOServer(config);
 
         System.out.println("test");
 
@@ -270,9 +276,10 @@ public class AppServer {
         });
 
         server.start();
+        System.out.println("test22");
 
-        Thread.sleep(Integer.MAX_VALUE);
+        // Thread.sleep(Integer.MAX_VALUE);
 
-        server.stop();
+        // server.stop();
     }
 }

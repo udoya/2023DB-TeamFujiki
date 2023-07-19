@@ -356,7 +356,7 @@ public class ScalarOperations {
     return mapResult;
   }
 
-  //おーくしょんの入札履歴を返す
+  //おーくしょんの入札履歴を返す　時間の昇順
   public List<Object> getAllAuctionBids(int auction_id)
     throws TransactionException {
     DistributedTransaction tx = manager.start();

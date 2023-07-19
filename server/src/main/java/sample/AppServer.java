@@ -83,6 +83,7 @@ public class AppServer {
                         notify);
             }
         });
+
         server.addDisconnectListener(new DisconnectListener() {
             @Override
             public void onDisconnect(SocketIOClient client) {
@@ -278,8 +279,9 @@ public class AppServer {
         server.start();
         System.out.println("test22");
 
+        Thread.sleep(20000);
         // Thread.sleep(Integer.MAX_VALUE);
 
-        // server.stop();
+        server.stop();
     }
 }

@@ -1,13 +1,14 @@
-apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'application'
+
+mainClassName = 'sample.AppMain'
 
 repositories {
     mavenCentral()
 }
 
 tasks.withType(JavaCompile) {
-  options.compilerArgs << '-Xlint:unchecked'
+    options.compilerArgs << '-Xlint:unchecked'
 }
 
 mainClassName = "sample.AppMain"

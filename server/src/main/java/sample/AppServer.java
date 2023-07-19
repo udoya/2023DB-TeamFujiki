@@ -28,6 +28,35 @@ public class AppServer {
 
     public static Map<String, Integer> userMap = new HashMap<>();
 
+    public void addMember() {
+        int auction_id;
+        try {
+            auction_id = (int) scalar.getLatestAuction().get("auction_id");
+            member = scalar.modifyAttendeeCount(auction_id, true);
+            // this is mean member++
+        } catch (TransactionException e) {
+            auction_id = -1;
+            System.out.println("error!!!");
+            e.printStackTrace();
+        }
+    }
+
+    public void subMember() {
+        int auction_id;
+        try {
+            auction_id = (int) scalar.getLatestAuction().get("auction_id");
+            member = scalar.modifyAttendeeCount(auction_id, false);
+        } catch (TransactionException e) {
+            auction_id = -1;
+            System.out.println("error!!!");
+            e.printStackTrace();
+        }
+    }
+
+    public void resetMember() {
+        member = 0;
+    }
+
     public void start(SocketIOServer server) throws InterruptedException {
         // Hard codingで許してください
         userMap.put("John", 1);
@@ -39,17 +68,8 @@ public class AppServer {
         server.addConnectListener(new ConnectListener() {
             @Override
             public void onConnect(SocketIOClient client) {
-                int auction_id;
-                try {
-                    auction_id = (int) scalar.getLatestAuction().get("auction_id");
-                    member = scalar.modifyAttendeeCount(auction_id, true);
-                } catch (TransactionException e) {
-                    auction_id = -1;
-                    System.out.println("error!!!");
-                    e.printStackTrace();
-                }
+                addMember();
 
-                // member++; // クライアント接続時にインスタンス変数を増やす
                 System.out.println("Client connected. Current members: " + member);
                 NotifyNumOfParticipantsResponse notify = new NotifyNumOfParticipantsResponse();
                 notify.number = member;
@@ -57,21 +77,36 @@ public class AppServer {
                         notify);
             }
         });
-
         server.addDisconnectListener(new DisconnectListener() {
             @Override
             public void onDisconnect(SocketIOClient client) {
-                int auction_id;
-                try {
-                    auction_id = (int) scalar.getLatestAuction().get("auction_id");
-                    member = scalar.modifyAttendeeCount(auction_id, false);
-                } catch (TransactionException e) {
-                    auction_id = -1;
-                    System.out.println("error!!!");
-                    e.printStackTrace();
-                }
+                subMember();
 
                 // member--; // クライアント切断時にインスタンス変数を減らす
+                System.out.println("Client disconnected. Current members: " + member);
+                NotifyNumOfParticipantsResponse notify = new NotifyNumOfParticipantsResponse();
+                notify.number = member;
+                server.getBroadcastOperations().sendEvent("NOTIFY_NUM_OF_PARTICIPANTS",
+                        notify);
+            }
+        });
+
+        server.addEventListener("RELOAD_MEMBER_ADD", BidOnRequest.class, new DataListener<BidOnRequest>() {
+            @Override
+            public void onData(SocketIOClient client, BidOnRequest data, AckRequest ackRequest) {
+                // serverの時間タイムスタンプを使わない感じになってしまった.....
+                addMember();
+                NotifyNumOfParticipantsResponse notify = new NotifyNumOfParticipantsResponse();
+                notify.number = member;
+                server.getBroadcastOperations().sendEvent("NOTIFY_NUM_OF_PARTICIPANTS",
+                        notify);
+            }
+        });
+        server.addEventListener("RELOAD_MEMBER_SUB", BidOnRequest.class, new DataListener<BidOnRequest>() {
+            @Override
+            public void onData(SocketIOClient client, BidOnRequest data, AckRequest ackRequest) {
+                // serverの時間タイムスタンプを使わない感じになってしまった.....
+                subMember();
                 System.out.println("Client disconnected. Current members: " + member);
                 NotifyNumOfParticipantsResponse notify = new NotifyNumOfParticipantsResponse();
                 notify.number = member;
@@ -111,7 +146,6 @@ public class AppServer {
                     initResp.current_item.setItem_name(
                             (String) scalar.getItem(auc_uid, initResp.current_item.item_id)
                                     .get("item_name"));
-                    // TODO ?
                     List<Object> allBids = new ArrayList<>();
                     allBids = scalar.getAllAuctionBids(auc_uid);
                     Object last = allBids.get(allBids.size() - 1);
@@ -120,6 +154,7 @@ public class AppServer {
                     initResp.current_item.history.setTime(time);
                     initResp.current_item.history.setUser_name((String) scalar.getUserInfo(auc_uid).get("user_name"));
                 } catch (TransactionException e) {
+                    System.out.println("error!");
                     e.printStackTrace();
                 }
 
@@ -191,6 +226,8 @@ public class AppServer {
                     } catch (TransactionException e) {
                         e.printStackTrace();
                     }
+                    resetMember();
+                    server.getBroadcastOperations().sendEvent("RELOAD_MEMBER_ADD", data);
 
                 } else {
                     r_hands.setItem_id(0);
@@ -204,6 +241,7 @@ public class AppServer {
 
             }
         });
+
         server.addEventListener("BID-ON", BidOnRequest.class, new DataListener<BidOnRequest>() {
             @Override
             public void onData(SocketIOClient client, BidOnRequest data, AckRequest ackRequest) {

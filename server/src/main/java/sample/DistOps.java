@@ -391,13 +391,10 @@ public class DistOps {
     //ソート処理
     Collections.sort(
       results,
-      new Comparator<Person>() {
+      new Comparator<Result>() {
         @Override
         public int compare(Result r1, Result r2) {
-          return Integer.compare(
-            r1.get().getInt("time"),
-            r2.get().getInt("time")
-          );
+          return Integer.compare(r1.getInt("price"), r2.getInt("price"));
         }
       }
     );
@@ -428,7 +425,7 @@ public class DistOps {
         .newBuilder()
         .namespace(NAMESPACES[mod])
         .table("items")
-        .clusteringKey(Key.ofInt("item_id", item_id))
+        .partitionKey(Key.ofInt("item_id", item_id))
         .build();
       Optional<Result> item = tx.get(get);
 
@@ -436,7 +433,7 @@ public class DistOps {
       for (int i = 0; i < 3; i++) {
         Scan scan = Scan
           .newBuilder()
-          .namespace(NAMESPACE[i])
+          .namespace(NAMESPACES[i])
           .table("auctions")
           .all()
           .build();
@@ -492,7 +489,7 @@ public class DistOps {
     try {
       Get get = Get
         .newBuilder()
-        .namespace(NAMESPACEs[mod])
+        .namespace(NAMESPACES[mod])
         .table("auctions")
         .partitionKey(Key.ofInt("auction_id", auction_id))
         .build();
@@ -527,7 +524,6 @@ public class DistOps {
     DistributedTransaction tx = manager.start();
     try {
       // 前回の値と比較
-
       List<Result> results = new ArrayList<>();
       for (int i = 0; i < 3; i++) {
         Scan scan = Scan
@@ -540,16 +536,13 @@ public class DistOps {
       }
       tx.commit();
 
-      //ソート処理
+      //ソート処理 降順
       Collections.sort(
         results,
-        new Comparator<Person>() {
+        new Comparator<Result>() {
           @Override
           public int compare(Result r1, Result r2) {
-            return Integer.compare(
-              r1.get().getInt("time"),
-              r2.get().getInt("time")
-            );
+            return Integer.compare(r2.getInt("price"), r1.getInt("price"));
           }
         }
       );
@@ -568,7 +561,7 @@ public class DistOps {
       int mod = next_id % 3;
       Put put = Put
         .newBuilder()
-        .namespace(NAMESPACE[mod])
+        .namespace(NAMESPACES[mod])
         .table("bids")
         .partitionKey(Key.ofInt("bid_id", next_id))
         .bigIntValue("time", currentTimestamp)
@@ -586,94 +579,110 @@ public class DistOps {
   }
 
   // 落札の処理
-  //   public Map<String, Object> processWinningBid() throws TransactionException {
-  //     DistributedTransaction tx = manager.start();
-  //     try {
-  //       // bidsの中の一番大きい値をpurchaseに書き込み、itemsのis_soldを1に
-  //       Map<String, Object> mapResult = new HashMap<String, Object>();
-  //       List<Result> results;
-  //       Scan scan1 = Scan
-  //         .newBuilder()
-  //         .namespace(NAMESPACE)
-  //         .table("auctions")
-  //         .all()
-  //         .build();
-  //       results = tx.scan(scan1);
-  //       Result result = results.get(0);
-  //       long max = result.getBigInt("start_time");
-  //       for (int i = 1; i < results.size(); i++) {
-  //         long time = results.get(i).getBigInt("start_time");
-  //         if (max < time) {
-  //           max = time;
-  //           result = results.get(i);
-  //         }
-  //       }
-  //       int auction_id = result.getInt("auction_id");
+  public Map<String, Object> processWinningBid() throws TransactionException {
+    DistributedTransaction tx = manager.start();
+    int mod;
+    try {
+      // bidsの中の一番大きい値をpurchaseに書き込み、itemsのis_soldを1に
+      Map<String, Object> mapResult = new HashMap<String, Object>();
+      List<Result> results = new ArrayList<>();
+      for (int i = 0; i < 3; i++) {
+        Scan scan1 = Scan
+          .newBuilder()
+          .namespace(NAMESPACES[i])
+          .table("auctions")
+          .all()
+          .build();
+        results.addAll(tx.scan(scan1));
+      }
+      //ソート処理 降順
+      Collections.sort(
+        results,
+        new Comparator<Result>() {
+          @Override
+          public int compare(Result r1, Result r2) {
+            return Integer.compare(
+              r2.getInt("auction_id"),
+              r1.getInt("auction_id")
+            );
+          }
+        }
+      );
 
-  //       Get get = Get
-  //         .newBuilder()
-  //         .namespace(NAMESPACE)
-  //         .table("items")
-  //         .partitionKey(Key.ofInt("user_id", result.getInt("user_id")))
-  //         .clusteringKey(Key.ofInt("item_id", result.getInt("item_id")))
-  //         .build();
-  //       Optional<Result> item = tx.get(get);
-  //       String item_name = item.get().getText("item_name");
+      Result result = results.get(0);
+      int auction_id = result.getInt("auction_id");
+      int item_id = result.getInt("item_id");
+      mod = item_id % 3;
+      Get get = Get
+        .newBuilder()
+        .namespace(NAMESPACES[mod])
+        .table("items")
+        .partitionKey(Key.ofInt("item_id", item_id))
+        .build();
+      Optional<Result> item = tx.get(get);
+      String item_name = item.get().getText("item_name");
+      Put put1 = Put
+        .newBuilder()
+        .namespace(NAMESPACES[mod])
+        .table("items")
+        .partitionKey(Key.ofInt("item_id", item_id))
+        .booleanValue("is_sold", true)
+        .build();
 
-  //       Put put1 = Put
-  //         .newBuilder()
-  //         .namespace(NAMESPACE)
-  //         .table("items")
-  //         .partitionKey(Key.ofInt("user_id", result.getInt("user_id")))
-  //         .clusteringKey(Key.ofInt("item_id", result.getInt("item_id")))
-  //         .booleanValue("is_sold", true)
-  //         .build();
+      tx.put(put1);
 
-  //       tx.put(put1);
+      results = new ArrayList<>();
+      for (int i = 0; i < 3; i++) {
+        Scan scan = Scan
+          .newBuilder()
+          .namespace(NAMESPACES[i])
+          .table("bids")
+          .indexKey(Key.ofInt("auction_id", auction_id))
+          .build();
+        results.addAll(tx.scan(scan));
+      }
+      tx.commit();
 
-  //       Scan scan2 = Scan
-  //         .newBuilder()
-  //         .namespace(NAMESPACE)
-  //         .table("bids")
-  //         .partitionKey(Key.ofInt("auction_id", auction_id))
-  //         // .orderings(Scan.Ordering.desc("price"))
-  //         // .limit(1)
-  //         .build();
-  //       results = tx.scan(scan2);
-  //       Result maxBid = results.get(0);
-  //       long maxTime = maxBid.getBigInt("time");
-  //       for (int i = 1; i < results.size(); i++) {
-  //         long time = results.get(i).getBigInt("time");
-  //         if (maxTime < time) {
-  //           maxTime = time;
-  //           maxBid = results.get(i);
-  //         }
-  //       }
-  //       int user_id = maxBid.getInt("user_id");
-  //       int price = maxBid.getInt("price");
-  //       mapResult.put("user_id", user_id);
-  //       mapResult.put("price", price);
+      //ソート処理 降順
+      Collections.sort(
+        results,
+        new Comparator<Result>() {
+          @Override
+          public int compare(Result r1, Result r2) {
+            return Integer.compare(r2.getInt("price"), r1.getInt("price"));
+          }
+        }
+      );
+      if (results.isEmpty()) {
+        mapResult.put("user_id", 0);
+        mapResult.put("price", 0);
+        return mapResult;
+      }
+      int user_id = results.get(0).getInt("user_id");
+      int price = results.get(0).getInt("price");
+      mapResult.put("user_id", user_id);
+      mapResult.put("price", price);
+      mod = user_id % 3;
+      Put put2 = Put
+        .newBuilder()
+        .namespace(NAMESPACES[mod])
+        .table("purchases")
+        .partitionKey(Key.ofInt("user_id", user_id))
+        .clusteringKey(Key.ofInt("purchase_id", random.nextInt(2147483647)))
+        .intValue("auction_id", auction_id)
+        .intValue("price", price)
+        .textValue("item_name", item_name)
+        .build();
 
-  //       Put put2 = Put
-  //         .newBuilder()
-  //         .namespace(NAMESPACE)
-  //         .table("purchases")
-  //         .partitionKey(Key.ofInt("user_id", user_id))
-  //         .clusteringKey(Key.ofInt("purchase_id", random.nextInt(2147483647)))
-  //         .intValue("auction_id", auction_id)
-  //         .intValue("price", price)
-  //         .textValue("item_name", item_name)
-  //         .build();
+      tx.put(put2);
 
-  //       tx.put(put2);
-
-  //       tx.commit();
-  //       return mapResult;
-  //     } catch (Exception e) {
-  //       tx.abort();
-  //       throw e;
-  //     }
-  //   }
+      tx.commit();
+      return mapResult;
+    } catch (Exception e) {
+      tx.abort();
+      throw e;
+    }
+  }
 
   public void close() {
     manager.close();

@@ -98,14 +98,12 @@ public class AppServer {
                     e.printStackTrace();
                 }
 
-                // 無理やりDBとマッピングさせた
+                // NOTE: 無理やりDBとマッピングさせた
                 initResp.items = userItems;
 
                 initResp.setUser_id(uid);
 
                 initResp.setRemaining_time(time);
-
-                // TODO: what to do? 入札履歴！
 
                 try {
                     int auc_uid = (int) latestAuction.get("user_id");
@@ -113,8 +111,12 @@ public class AppServer {
                     initResp.current_item.setItem_name(
                             (String) scalar.getItem(auc_uid, initResp.current_item.item_id)
                                     .get("item_name"));
-                    // TODO
-                    initResp.current_item.history.setPrice(0);
+                    // TODO ?
+                    List<Object> allBids = new ArrayList<>();
+                    allBids = scalar.getAllAuctionBids(auc_uid);
+                    Object last = allBids.get(allBids.size() - 1);
+
+                    initResp.current_item.history.setPrice((int) last);
                     initResp.current_item.history.setTime(time);
                     initResp.current_item.history.setUser_name((String) scalar.getUserInfo(auc_uid).get("user_name"));
                 } catch (TransactionException e) {
@@ -183,6 +185,13 @@ public class AppServer {
                     }, 0, 1, TimeUnit.SECONDS);
 
                     // add member
+                    Map<String, Object> latestAuction = new HashMap<>();
+                    try {
+                        latestAuction = scalar.getLatestAuction();
+                    } catch (TransactionException e) {
+                        e.printStackTrace();
+                    }
+
                 } else {
                     r_hands.setItem_id(0);
                     r_hands.setItem_name("");

@@ -1,0 +1,179 @@
+{
+  "app1.users": {
+    "transaction": true,
+    "partition-key": ["user_id"],
+    "clustering-key": [],
+    "columns": {
+      "user_id": "INT",
+      "user_name": "TEXT"
+    },
+    "secondary-index": ["user_name"]
+  },
+  "app1.items": {
+    "transaction": true,
+    "partition-key": ["item_id"],
+    "clustering-key": [],
+    "columns": {
+      "item_id": "INT",
+      "item_name": "TEXT",
+      "user_id": "INT",
+      "is_sold": "BOOLEAN"
+    },
+    "secondary-index": ["user_id"]
+  },
+  "app1.purchases": {
+    "transaction": true,
+    "partition-key": ["user_id"],
+    "clustering-key": ["purchase_id"],
+    "columns": {
+      "purchase_id": "INT",
+      "user_id": "INT",
+      "auction_id": "INT",
+      "item_name": "TEXT",
+      "price": "INT"
+    }
+  },
+  "app1.auctions": {
+    "transaction": true,
+    "partition-key": ["auction_id"],
+    "clustering-key": [],
+    "columns": {
+      "auction_id": "INT",
+      "user_id": "INT",
+      "item_id": "INT",
+      "attendee_count": "INT",
+      "start_time": "BIGINT"
+    }
+  },
+  "app1.bids": {
+    "transaction": true,
+    "partition-key": ["bid_id"],
+    "clustering-key": [],
+    "columns": {
+      "bid_id": "INT",
+      "auction_id": "INT",
+      "user_id": "INT",
+      "price": "INT",
+      "time": "BIGINT"
+    },
+    "secondary-index": ["auction_id"]
+  },
+  "app2.users": {
+    "transaction": true,
+    "partition-key": ["user_id"],
+    "clustering-key": [],
+    "columns": {
+      "user_id": "INT",
+      "user_name": "TEXT"
+    },
+    "secondary-index": ["user_name"]
+  },
+  "app2.items": {
+    "transaction": true,
+    "partition-key": ["item_id"],
+    "clustering-key": [],
+    "columns": {
+      "item_id": "INT",
+      "item_name": "TEXT",
+      "user_id": "INT",
+      "is_sold": "BOOLEAN"
+    },
+    "secondary-index": ["user_id"]
+  },
+  "app2.purchases": {
+    "transaction": true,
+    "partition-key": ["user_id"],
+    "clustering-key": ["purchase_id"],
+    "columns": {
+      "purchase_id": "INT",
+      "user_id": "INT",
+      "auction_id": "INT",
+      "item_name": "TEXT",
+      "price": "INT"
+    }
+  },
+  "app2.auctions": {
+    "transaction": true,
+    "partition-key": ["auction_id"],
+    "clustering-key": [],
+    "columns": {
+      "auction_id": "INT",
+      "user_id": "INT",
+      "item_id": "INT",
+      "attendee_count": "INT",
+      "start_time": "BIGINT"
+    }
+  },
+  "app2.bids": {
+    "transaction": true,
+    "partition-key": ["bid_id"],
+    "clustering-key": [],
+    "columns": {
+      "bid_id": "INT",
+      "auction_id": "INT",
+      "user_id": "INT",
+      "price": "INT",
+      "time": "BIGINT"
+    },
+    "secondary-index": ["auction_id"]
+  },
+  "app3.users": {
+    "transaction": true,
+    "partition-key": ["user_id"],
+    "clustering-key": [],
+    "columns": {
+      "user_id": "INT",
+      "user_name": "TEXT"
+    },
+    "secondary-index": ["user_name"]
+  },
+  "app3.items": {
+    "transaction": true,
+    "partition-key": ["item_id"],
+    "clustering-key": [],
+    "columns": {
+      "item_id": "INT",
+      "item_name": "TEXT",
+      "user_id": "INT",
+      "is_sold": "BOOLEAN"
+    },
+    "secondary-index": ["user_id"]
+  },
+  "app3.purchases": {
+    "transaction": true,
+    "partition-key": ["user_id"],
+    "clustering-key": ["purchase_id"],
+    "columns": {
+      "purchase_id": "INT",
+      "user_id": "INT",
+      "auction_id": "INT",
+      "item_name": "TEXT",
+      "price": "INT"
+    }
+  },
+  "app3.auctions": {
+    "transaction": true,
+    "partition-key": ["auction_id"],
+    "clustering-key": [],
+    "columns": {
+      "auction_id": "INT",
+      "user_id": "INT",
+      "item_id": "INT",
+      "attendee_count": "INT",
+      "start_time": "BIGINT"
+    }
+  },
+  "app3.bids": {
+    "transaction": true,
+    "partition-key": ["bid_id"],
+    "clustering-key": [],
+    "columns": {
+      "bid_id": "INT",
+      "auction_id": "INT",
+      "user_id": "INT",
+      "price": "INT",
+      "time": "BIGINT"
+    },
+    "secondary-index": ["auction_id"]
+  }
+}

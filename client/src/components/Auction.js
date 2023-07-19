@@ -9,7 +9,7 @@ import ChatBubbleOutlineIcon from '@material-ui/icons/ChatBubbleOutline';
 import ChatBubble from './ChatBubble';
 import LinearProgressWithLabel from './LinearProgressWithLabel';
 
-const socket = io('http://localhost:9092');
+const socket = io('http://localhost:10100');
 // const socket = io();
 const DEFAULT_TIME = 120;
 

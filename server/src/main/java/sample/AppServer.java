@@ -66,7 +66,7 @@ public class AppServer {
         scalar = new ScalarOperations();
         Configuration config = new Configuration();
         config.setHostname("localhost");
-        config.setPort(9092);
+        config.setPort(10100);
         config.setOrigin("*");
         //websocket
         config.setTransports(Transport.WEBSOCKET);
@@ -281,7 +281,12 @@ public class AppServer {
         System.out.println("test22");
 
         // Thread.sleep(Integer.MAX_VALUE);
-
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            server.stop();
+            System.out.println("Server stopped and port released");
+        }));
+        
+        Thread.sleep(Integer.MAX_VALUE);
         // server.stop();
     }
 }

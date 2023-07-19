@@ -396,15 +396,42 @@ public class ScalarOperations {
     DistributedTransaction tx = manager.start();
     try {
       // item get して !is_sold なら put
-      Map<String, Object> item = this.getItem(user_id, item_id); // ２重のtxはok?
-      Map<String, Object> latestAuction = this.getLatestAuction();
-      long startTimeStamp = (Long) latestAuction.get("start_time");
+
+      Get get = Get
+        .newBuilder()
+        .namespace(NAMESPACE)
+        .table("items")
+        .partitionKey(Key.ofInt("user_id", user_id))
+        .clusteringKey(Key.ofInt("item_id", item_id))
+        .build();
+      Optional<Result> item = tx.get(get);
+
+      List<Result> results;
+      Scan scan = Scan
+        .newBuilder()
+        .namespace(NAMESPACE)
+        .table("auctions")
+        .all()
+        .build();
+      results = tx.scan(scan);
+      Result latestAuction = results.get(0);
+      long max = latestAuction.getBigInt("start_time");
+      for (int i = 1; i < results.size(); i++) {
+        long time = results.get(i).getBigInt("start_time");
+        if (max < time) {
+          max = time;
+          latestAuction = results.get(i);
+        }
+      }
+
+      long startTimeStamp = latestAuction.getBigInt("start_time");
       Instant instant = Instant.now();
       long currentTimestamp = instant.toEpochMilli();
       boolean notAuctionNow =
         currentTimestamp - startTimeStamp > (60 * 60 * 1000);
-      if (item.get("is_sold").equals("false") && notAuctionNow) {
-        int auction_id = (Integer) latestAuction.get("auction_id") + 1;
+      boolean is_sold = item.get().getBoolean("is_sold");
+      if (!is_sold && notAuctionNow) {
+        int auction_id = latestAuction.getInt("auction_id") + 1;
         Put put = Put
           .newBuilder()
           .namespace(NAMESPACE)
@@ -433,8 +460,15 @@ public class ScalarOperations {
     throws TransactionException {
     DistributedTransaction tx = manager.start();
     try {
-      Map<String, Object> auction = getAuction(auction_id);
-      int attendee_count = (Integer) auction.get("attendee_count");
+      Get get = Get
+        .newBuilder()
+        .namespace(NAMESPACE)
+        .table("auctions")
+        .partitionKey(Key.ofInt("auction_id", auction_id))
+        .build();
+      Optional<Result> result = tx.get(get);
+      Result auction = result.get();
+      int attendee_count = auction.getInt("attendee_count");
       if (is_add) {
         attendee_count++;
       } else {

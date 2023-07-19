@@ -18,6 +18,8 @@ cd ./server
 Only the first run, you should create scheme by scalarDB, and load the data.
 ```
 java -jar scalardb-schema-loader-3.9.1.jar --config scalardb.properties --schema-file schema.json --coordinator
+```
+```
 gradle run --args="load"
 ```
 

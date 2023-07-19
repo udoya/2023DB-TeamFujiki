@@ -14,7 +14,9 @@ import com.scalar.db.io.Key;
 import com.scalar.db.service.TransactionFactory;
 import java.io.File;
 import java.io.IOException;
+import java.io.IOException;
 import java.time.Instant;
+import java.util.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -23,15 +25,15 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Random;
 
-public class ScalarOperations {
+public class DistOps {
 
-  private static final String NAMESPACE = "app";
+  private static final String[] NAMESPACES = { "app1", "app2", "app3" };
   Properties properties = new Properties();
   TransactionFactory factory;
   private final DistributedTransactionManager manager;
   private Random random = new Random();
 
-  public ScalarOperations() throws IOException {
+  public DistOps() throws IOException {
     String scalarDBProperties =
       System.getProperty("user.dir") + File.separator + "scalardb.properties";
     factory = TransactionFactory.create(scalarDBProperties);
@@ -42,10 +44,11 @@ public class ScalarOperations {
   public void addUser(int user_id, String user_name)
     throws TransactionException {
     DistributedTransaction tx = manager.start();
+    int mod = user_id % 3;
     try {
       Put put = Put
         .newBuilder()
-        .namespace(NAMESPACE)
+        .namespace(NAMESPACES[mod])
         .table("users")
         .partitionKey(Key.ofInt("user_id", user_id))
         .textValue("user_name", user_name)
@@ -68,15 +71,16 @@ public class ScalarOperations {
     boolean is_sold
   ) throws TransactionException {
     DistributedTransaction tx = manager.start();
+    int mod = item_id % 3;
     try {
       Put put = Put
         .newBuilder()
-        .namespace(NAMESPACE)
+        .namespace(NAMESPACES[mod])
         .table("items")
-        .partitionKey(Key.ofInt("user_id", user_id))
-        .clusteringKey(Key.ofInt("item_id", item_id))
+        .partitionKey(Key.ofInt("item_id", item_id))
         .textValue("item_name", item_name)
         .booleanValue("is_sold", is_sold)
+        .intValue("user_id", user_id)
         .build();
 
       tx.put(put);
@@ -97,10 +101,11 @@ public class ScalarOperations {
     int price
   ) throws TransactionException {
     DistributedTransaction tx = manager.start();
+    int mod = user_id % 3;
     try {
       Put put = Put
         .newBuilder()
-        .namespace(NAMESPACE)
+        .namespace(NAMESPACES[mod])
         .table("purchases")
         .partitionKey(Key.ofInt("user_id", user_id))
         .clusteringKey(Key.ofInt("purchase_id", purchase_id))
@@ -127,10 +132,11 @@ public class ScalarOperations {
     long start_time
   ) throws TransactionException {
     DistributedTransaction tx = manager.start();
+    int mod = auction_id % 3;
     try {
       Put put = Put
         .newBuilder()
-        .namespace(NAMESPACE)
+        .namespace(NAMESPACES[mod])
         .table("auctions")
         .partitionKey(Key.ofInt("auction_id", auction_id))
         .intValue("user_id", user_id)
@@ -157,15 +163,16 @@ public class ScalarOperations {
     long time
   ) throws TransactionException {
     DistributedTransaction tx = manager.start();
+    int mod = bid_id % 3;
     try {
       Put put = Put
         .newBuilder()
-        .namespace(NAMESPACE)
+        .namespace(NAMESPACES[mod])
         .table("bids")
-        .partitionKey(Key.ofInt("auction_id", auction_id))
-        .clusteringKey(Key.ofInt("bid_id", bid_id))
+        .partitionKey(Key.ofInt("bid_id", bid_id))
         .intValue("user_id", user_id)
         .intValue("price", price)
+        .intValue("auction_id", auction_id)
         .bigIntValue("time", time)
         .build();
 
@@ -182,10 +189,11 @@ public class ScalarOperations {
   public Map<String, Object> getUserInfo(int user_id)
     throws TransactionException {
     DistributedTransaction tx = manager.start();
+    int mod = user_id % 3;
     try {
       Get get = Get
         .newBuilder()
-        .namespace(NAMESPACE)
+        .namespace(NAMESPACES[mod])
         .table("users")
         .partitionKey(Key.ofInt("user_id", user_id))
         .build();
@@ -205,44 +213,45 @@ public class ScalarOperations {
   // アイテム一覧取得
   public List<Object> getAllUserItem(int user_id) throws TransactionException {
     DistributedTransaction tx = manager.start();
+    List<Result> results = new ArrayList<>();
     try {
-      Scan scan = Scan
-        .newBuilder()
-        .namespace(NAMESPACE)
-        .table("items")
-        .partitionKey(Key.ofInt("user_id", user_id))
-        .build();
-      List<Result> results = tx.scan(scan);
-
-      tx.commit();
-
-      List<Object> values = new ArrayList<>();
-      for (int i = 0; i < results.size(); i++) {
-        Map<String, Object> mapResult = new HashMap<String, Object>();
-        Result result = results.get(i);
-        mapResult.put("item_id", result.getInt("item_id"));
-        mapResult.put("item_name", result.getText("item_name"));
-        mapResult.put("is_sold", result.getBoolean("is_sold"));
-        values.add(mapResult);
+      for (int i = 0; i < 3; i++) {
+        Scan scan = Scan
+          .newBuilder()
+          .namespace(NAMESPACES[i])
+          .table("items")
+          .indexKey(Key.ofInt("user_id", user_id))
+          .build();
+        results.addAll(tx.scan(scan));
       }
-      return values;
+      tx.commit();
     } catch (Exception e) {
       tx.abort();
       throw e;
     }
+    List<Object> values = new ArrayList<>();
+    for (int i = 0; i < results.size(); i++) {
+      Map<String, Object> mapResult = new HashMap<String, Object>();
+      Result result = results.get(i);
+      mapResult.put("item_id", result.getInt("item_id"));
+      mapResult.put("item_name", result.getText("item_name"));
+      mapResult.put("is_sold", result.getBoolean("is_sold"));
+      values.add(mapResult);
+    }
+    return values;
   }
 
   // アイテム取得
   public Map<String, Object> getItem(int user_id, int item_id)
     throws TransactionException {
     DistributedTransaction tx = manager.start();
+    int mod = item_id % 3;
     try {
       Get get = Get
         .newBuilder()
-        .namespace(NAMESPACE)
+        .namespace(NAMESPACES[mod])
         .table("items")
-        .partitionKey(Key.ofInt("user_id", user_id))
-        .clusteringKey(Key.ofInt("item_id", item_id))
+        .partitionKey(Key.ofInt("item_id", item_id))
         .build();
       Optional<Result> result = tx.get(get);
 
@@ -262,10 +271,11 @@ public class ScalarOperations {
   // 購入履歴取得
   public List<Object> getAllPurchase(int user_id) throws TransactionException {
     DistributedTransaction tx = manager.start();
+    int mod = user_id % 3;
     try {
       Scan scan = Scan
         .newBuilder()
-        .namespace(NAMESPACE)
+        .namespace(NAMESPACES[mod])
         .table("purchases")
         .partitionKey(Key.ofInt("user_id", user_id))
         .build();
@@ -295,10 +305,11 @@ public class ScalarOperations {
   public Map<String, Object> getAuction(int auction_id)
     throws TransactionException {
     DistributedTransaction tx = manager.start();
+    int mod = auction_id % 3;
     try {
       Get get = Get
         .newBuilder()
-        .namespace(NAMESPACE)
+        .namespace(NAMESPACES[mod])
         .table("auctions")
         .partitionKey(Key.ofInt("auction_id", auction_id))
         .build();
@@ -321,15 +332,17 @@ public class ScalarOperations {
   // 最新オークション取得
   public Map<String, Object> getLatestAuction() throws TransactionException {
     DistributedTransaction tx = manager.start();
-    List<Result> results;
+    List<Result> results = new ArrayList<>();
     try {
-      Scan scan = Scan
-        .newBuilder()
-        .namespace(NAMESPACE)
-        .table("auctions")
-        .all()
-        .build();
-      results = tx.scan(scan);
+      for (int i = 0; i < 3; i++) {
+        Scan scan = Scan
+          .newBuilder()
+          .namespace(NAMESPACES[i])
+          .table("auctions")
+          .all()
+          .build();
+        results.addAll(tx.scan(scan));
+      }
       tx.commit();
     } catch (Exception e) {
       tx.abort();
@@ -358,21 +371,33 @@ public class ScalarOperations {
   public List<Object> getAllAuctionBids(int auction_id)
     throws TransactionException {
     DistributedTransaction tx = manager.start();
-    List<Result> results;
+    List<Result> results = new ArrayList<>();
     try {
-      Scan scan = Scan
-        .newBuilder()
-        .namespace(NAMESPACE)
-        .table("bids")
-        .partitionKey(Key.ofInt("auction_id", auction_id))
-        // .orderings(Scan.Ordering.asc("time"))
-        .build();
-      results = tx.scan(scan);
+      for (int i = 0; i < 3; i++) {
+        Scan scan = Scan
+          .newBuilder()
+          .namespace(NAMESPACES[i])
+          .table("bids")
+          .indexKey(Key.ofInt("auction_id", auction_id))
+          .build();
+        results.addAll(tx.scan(scan));
+      }
       tx.commit();
     } catch (Exception e) {
       tx.abort();
       throw e;
     }
+
+    //ソート処理
+    Collections.sort(
+      results,
+      new Comparator<Result>() {
+        @Override
+        public int compare(Result r1, Result r2) {
+          return Integer.compare(r1.getInt("price"), r2.getInt("price"));
+        }
+      }
+    );
 
     List<Object> values = new ArrayList<>();
     for (int i = 0; i < results.size(); i++) {
@@ -394,24 +419,26 @@ public class ScalarOperations {
     DistributedTransaction tx = manager.start();
     try {
       // item get して !is_sold なら put
-
+      int mod;
+      mod = item_id % 3;
       Get get = Get
         .newBuilder()
-        .namespace(NAMESPACE)
+        .namespace(NAMESPACES[mod])
         .table("items")
-        .partitionKey(Key.ofInt("user_id", user_id))
-        .clusteringKey(Key.ofInt("item_id", item_id))
+        .partitionKey(Key.ofInt("item_id", item_id))
         .build();
       Optional<Result> item = tx.get(get);
 
-      List<Result> results;
-      Scan scan = Scan
-        .newBuilder()
-        .namespace(NAMESPACE)
-        .table("auctions")
-        .all()
-        .build();
-      results = tx.scan(scan);
+      List<Result> results = new ArrayList<>();
+      for (int i = 0; i < 3; i++) {
+        Scan scan = Scan
+          .newBuilder()
+          .namespace(NAMESPACES[i])
+          .table("auctions")
+          .all()
+          .build();
+        results.addAll(tx.scan(scan));
+      }
       Result latestAuction = results.get(0);
       long max = latestAuction.getBigInt("start_time");
       for (int i = 1; i < results.size(); i++) {
@@ -430,9 +457,10 @@ public class ScalarOperations {
       boolean is_sold = item.get().getBoolean("is_sold");
       if (!is_sold && notAuctionNow) {
         int auction_id = latestAuction.getInt("auction_id") + 1;
+        mod = auction_id % 3;
         Put put = Put
           .newBuilder()
-          .namespace(NAMESPACE)
+          .namespace(NAMESPACES[mod])
           .table("auctions")
           .partitionKey(Key.ofInt("auction_id", auction_id))
           .intValue("user_id", user_id)
@@ -457,10 +485,11 @@ public class ScalarOperations {
   public int modifyAttendeeCount(int auction_id, boolean is_add)
     throws TransactionException {
     DistributedTransaction tx = manager.start();
+    int mod = auction_id % 3;
     try {
       Get get = Get
         .newBuilder()
-        .namespace(NAMESPACE)
+        .namespace(NAMESPACES[mod])
         .table("auctions")
         .partitionKey(Key.ofInt("auction_id", auction_id))
         .build();
@@ -474,7 +503,7 @@ public class ScalarOperations {
       }
       Put put = Put
         .newBuilder()
-        .namespace(NAMESPACE)
+        .namespace(NAMESPACES[mod])
         .table("auctions")
         .partitionKey(Key.ofInt("auction_id", auction_id))
         .intValue("attendee_count", attendee_count)
@@ -495,15 +524,29 @@ public class ScalarOperations {
     DistributedTransaction tx = manager.start();
     try {
       // 前回の値と比較
-      Scan scan = Scan
-        .newBuilder()
-        .namespace(NAMESPACE)
-        .table("bids")
-        .partitionKey(Key.ofInt("auction_id", auction_id))
-        .orderings(Scan.Ordering.desc("bid_id"))
-        .limit(1)
-        .build();
-      List<Result> results = tx.scan(scan);
+      List<Result> results = new ArrayList<>();
+      for (int i = 0; i < 3; i++) {
+        Scan scan = Scan
+          .newBuilder()
+          .namespace(NAMESPACES[i])
+          .table("bids")
+          .indexKey(Key.ofInt("auction_id", auction_id))
+          .build();
+        results.addAll(tx.scan(scan));
+      }
+      tx.commit();
+
+      //ソート処理 降順
+      Collections.sort(
+        results,
+        new Comparator<Result>() {
+          @Override
+          public int compare(Result r1, Result r2) {
+            return Integer.compare(r2.getInt("price"), r1.getInt("price"));
+          }
+        }
+      );
+
       int next_id;
       if (results.isEmpty()) {
         next_id = 1;
@@ -515,12 +558,12 @@ public class ScalarOperations {
       }
       Instant instant = Instant.now();
       long currentTimestamp = instant.toEpochMilli();
+      int mod = next_id % 3;
       Put put = Put
         .newBuilder()
-        .namespace(NAMESPACE)
+        .namespace(NAMESPACES[mod])
         .table("bids")
-        .partitionKey(Key.ofInt("auction_id", auction_id))
-        .clusteringKey(Key.ofInt("bid_id", next_id))
+        .partitionKey(Key.ofInt("bid_id", next_id))
         .bigIntValue("time", currentTimestamp)
         .intValue("user_id", user_id)
         .intValue("price", price)
@@ -538,75 +581,91 @@ public class ScalarOperations {
   // 落札の処理
   public Map<String, Object> processWinningBid() throws TransactionException {
     DistributedTransaction tx = manager.start();
+    int mod;
     try {
       // bidsの中の一番大きい値をpurchaseに書き込み、itemsのis_soldを1に
       Map<String, Object> mapResult = new HashMap<String, Object>();
-      List<Result> results;
-      Scan scan1 = Scan
-        .newBuilder()
-        .namespace(NAMESPACE)
-        .table("auctions")
-        .all()
-        .build();
-      results = tx.scan(scan1);
-      Result result = results.get(0);
-      long max = result.getBigInt("start_time");
-      for (int i = 1; i < results.size(); i++) {
-        long time = results.get(i).getBigInt("start_time");
-        if (max < time) {
-          max = time;
-          result = results.get(i);
-        }
+      List<Result> results = new ArrayList<>();
+      for (int i = 0; i < 3; i++) {
+        Scan scan1 = Scan
+          .newBuilder()
+          .namespace(NAMESPACES[i])
+          .table("auctions")
+          .all()
+          .build();
+        results.addAll(tx.scan(scan1));
       }
-      int auction_id = result.getInt("auction_id");
+      //ソート処理 降順
+      Collections.sort(
+        results,
+        new Comparator<Result>() {
+          @Override
+          public int compare(Result r1, Result r2) {
+            return Integer.compare(
+              r2.getInt("auction_id"),
+              r1.getInt("auction_id")
+            );
+          }
+        }
+      );
 
+      Result result = results.get(0);
+      int auction_id = result.getInt("auction_id");
+      int item_id = result.getInt("item_id");
+      mod = item_id % 3;
       Get get = Get
         .newBuilder()
-        .namespace(NAMESPACE)
+        .namespace(NAMESPACES[mod])
         .table("items")
-        .partitionKey(Key.ofInt("user_id", result.getInt("user_id")))
-        .clusteringKey(Key.ofInt("item_id", result.getInt("item_id")))
+        .partitionKey(Key.ofInt("item_id", item_id))
         .build();
       Optional<Result> item = tx.get(get);
       String item_name = item.get().getText("item_name");
-
       Put put1 = Put
         .newBuilder()
-        .namespace(NAMESPACE)
+        .namespace(NAMESPACES[mod])
         .table("items")
-        .partitionKey(Key.ofInt("user_id", result.getInt("user_id")))
-        .clusteringKey(Key.ofInt("item_id", result.getInt("item_id")))
+        .partitionKey(Key.ofInt("item_id", item_id))
         .booleanValue("is_sold", true)
         .build();
 
       tx.put(put1);
 
-      Scan scan2 = Scan
-        .newBuilder()
-        .namespace(NAMESPACE)
-        .table("bids")
-        .partitionKey(Key.ofInt("auction_id", auction_id))
-        // .orderings(Scan.Ordering.desc("price"))
-        // .limit(1)
-        .build();
-      results = tx.scan(scan2);
-      Result maxBid = results.get(0);
-      long maxTime = maxBid.getBigInt("time");
-      for (int i = 1; i < results.size(); i++) {
-        long time = results.get(i).getBigInt("time");
-        if (maxTime < time) {
-          maxTime = time;
-          maxBid = results.get(i);
-        }
+      results = new ArrayList<>();
+      for (int i = 0; i < 3; i++) {
+        Scan scan = Scan
+          .newBuilder()
+          .namespace(NAMESPACES[i])
+          .table("bids")
+          .indexKey(Key.ofInt("auction_id", auction_id))
+          .build();
+        results.addAll(tx.scan(scan));
       }
-      int user_id = maxBid.getInt("user_id");
-      int price = maxBid.getInt("price");
+      tx.commit();
+
+      //ソート処理 降順
+      Collections.sort(
+        results,
+        new Comparator<Result>() {
+          @Override
+          public int compare(Result r1, Result r2) {
+            return Integer.compare(r2.getInt("price"), r1.getInt("price"));
+          }
+        }
+      );
+      if (results.isEmpty()) {
+        mapResult.put("user_id", 0);
+        mapResult.put("price", 0);
+        return mapResult;
+      }
+      int user_id = results.get(0).getInt("user_id");
+      int price = results.get(0).getInt("price");
       mapResult.put("user_id", user_id);
       mapResult.put("price", price);
-
+      mod = user_id % 3;
       Put put2 = Put
         .newBuilder()
-        .namespace(NAMESPACE)
+        .namespace(NAMESPACES[mod])
         .table("purchases")
         .partitionKey(Key.ofInt("user_id", user_id))
         .clusteringKey(Key.ofInt("purchase_id", random.nextInt(2147483647)))

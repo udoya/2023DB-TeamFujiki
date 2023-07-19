@@ -31,7 +31,7 @@ public class ScalarOperations {
   private Random random = new Random();
 
   public ScalarOperations() {
-    properties.setProperty("scalar.db.contact_points", "localhost");
+    properties.setProperty("scalar.db.contact_points", "172.17.0.2");
     properties.setProperty("scalar.db.contact_port", "9042");
     properties.setProperty("scalar.db.storage", "cassandra");
     properties.setProperty("scalar.db.username", "cassandra");
@@ -502,40 +502,35 @@ public class ScalarOperations {
         .namespace(NAMESPACE)
         .table("bids")
         .partitionKey(Key.ofInt("auction_id", auction_id))
-        // .orderings(Scan.Ordering.desc("price"))
-        // .limit(1)
+        .orderings(Scan.Ordering.desc("bid_id"))
+        .limit(1)
         .build();
       List<Result> results = tx.scan(scan);
-      Result maxBid = results.get(0);
-      int maxPrice = maxBid.getInt("price");
-      for (int i = 1; i < results.size(); i++) {
-        int bidPrice = results.get(i).getInt("price");
-        if (maxPrice < bidPrice) {
-          maxPrice = bidPrice;
-          maxBid = results.get(i);
-        }
-      }
-
-      if (maxBid.getInt("price") < price) {
-        Instant instant = Instant.now();
-        long currentTimestamp = instant.toEpochMilli();
-        Put put = Put
-          .newBuilder()
-          .namespace(NAMESPACE)
-          .table("bids")
-          .partitionKey(Key.ofInt("auction_id", auction_id))
-          .clusteringKey(Key.ofInt("bid_id", maxBid.getInt("bid_id") + 1))
-          .bigIntValue("time", currentTimestamp)
-          .intValue("user_id", user_id)
-          .intValue("price", price)
-          .build();
-
-        tx.put(put);
-
-        tx.commit();
+      int next_id;
+      if (results.isEmpty()) {
+        next_id = 1;
+      } else if (results.get(0).getInt("price") < price) {
+        next_id = results.get(0).getInt("bid_id") + 1;
       } else {
         tx.abort();
+        return;
       }
+      Instant instant = Instant.now();
+      long currentTimestamp = instant.toEpochMilli();
+      Put put = Put
+        .newBuilder()
+        .namespace(NAMESPACE)
+        .table("bids")
+        .partitionKey(Key.ofInt("auction_id", auction_id))
+        .clusteringKey(Key.ofInt("bid_id", next_id))
+        .bigIntValue("time", currentTimestamp)
+        .intValue("user_id", user_id)
+        .intValue("price", price)
+        .build();
+
+      tx.put(put);
+
+      tx.commit();
     } catch (Exception e) {
       tx.abort();
       throw e;

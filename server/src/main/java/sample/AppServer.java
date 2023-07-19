@@ -16,6 +16,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import com.corundumstudio.socketio.*;
 import com.corundumstudio.socketio.listener.*;
 import com.corundumstudio.socketio.AckRequest;
 import com.corundumstudio.socketio.SocketIOClient;
@@ -28,63 +29,105 @@ public class AppServer {
 
     public static Map<String, Integer> userMap = new HashMap<>();
 
-    public void start(SocketIOServer server) throws InterruptedException {
+    public void addMember() {
+        int auction_id;
+        try {
+            auction_id = (int) scalar.getLatestAuction().get("auction_id");
+            member = scalar.modifyAttendeeCount(auction_id, true);
+            // this is mean member++
+        } catch (TransactionException e) {
+            auction_id = -1;
+            System.out.println("error!!!");
+            e.printStackTrace();
+        }
+    }
+
+    public void subMember() {
+        int auction_id;
+        try {
+            auction_id = (int) scalar.getLatestAuction().get("auction_id");
+            member = scalar.modifyAttendeeCount(auction_id, false);
+        } catch (TransactionException e) {
+            auction_id = -1;
+            System.out.println("error!!!");
+            e.printStackTrace();
+        }
+    }
+
+    public void resetMember() {
+        member = 0;
+    }
+
+    public void start() throws InterruptedException {
         // Hard codingで許してください
         userMap.put("John", 1);
         userMap.put("Bob", 2);
         userMap.put("Emma", 3);
+        scalar = new ScalarOperations();
+        Configuration config = new Configuration();
+        config.setHostname("localhost");
+        config.setPort(9092);
+        config.setOrigin("*");
+        //websocket
+        config.setTransports(Transport.WEBSOCKET);
+        SocketIOServer server = new SocketIOServer(config);
 
         System.out.println("test");
 
         server.addConnectListener(new ConnectListener() {
             @Override
             public void onConnect(SocketIOClient client) {
-                int auction_id;
-                try {
-                    auction_id = (int) scalar.getLatestAuction().get("auction_id");
-                    member = scalar.modifyAttendeeCount(auction_id, true);
-                } catch (TransactionException e) {
-                    auction_id = -1;
-                    System.out.println("error!!!");
-                    e.printStackTrace();
-                }
+                addMember();
 
-                // member++; // クライアント接続時にインスタンス変数を増やす
                 System.out.println("Client connected. Current members: " + member);
                 NotifyNumOfParticipantsResponse notify = new NotifyNumOfParticipantsResponse();
                 notify.number = member;
-                server.getBroadcastOperations().sendEvent("NOTIFY_NUM_OF_PARTICIPANTS",
+                server.getBroadcastOperations().sendEvent("notify-num-of-participants",
                         notify);
             }
         });
-
         server.addDisconnectListener(new DisconnectListener() {
             @Override
             public void onDisconnect(SocketIOClient client) {
-                int auction_id;
-                try {
-                    auction_id = (int) scalar.getLatestAuction().get("auction_id");
-                    member = scalar.modifyAttendeeCount(auction_id, false);
-                } catch (TransactionException e) {
-                    auction_id = -1;
-                    System.out.println("error!!!");
-                    e.printStackTrace();
-                }
+                subMember();
 
                 // member--; // クライアント切断時にインスタンス変数を減らす
                 System.out.println("Client disconnected. Current members: " + member);
                 NotifyNumOfParticipantsResponse notify = new NotifyNumOfParticipantsResponse();
                 notify.number = member;
-                server.getBroadcastOperations().sendEvent("NOTIFY_NUM_OF_PARTICIPANTS",
+                server.getBroadcastOperations().sendEvent("notify-num-of-participants",
                         notify);
             }
         });
 
-        server.addEventListener("INIT_STATE", InitStateRequest.class, new DataListener<InitStateRequest>() {
+        server.addEventListener("RELOAD_MEMBER_ADD", BidOnRequest.class, new DataListener<BidOnRequest>() {
+            @Override
+            public void onData(SocketIOClient client, BidOnRequest data, AckRequest ackRequest) {
+                // serverの時間タイムスタンプを使わない感じになってしまった.....
+                addMember();
+                NotifyNumOfParticipantsResponse notify = new NotifyNumOfParticipantsResponse();
+                notify.number = member;
+                server.getBroadcastOperations().sendEvent("notify-num-of-participants",
+                        notify);
+            }
+        });
+        server.addEventListener("RELOAD_MEMBER_SUB", BidOnRequest.class, new DataListener<BidOnRequest>() {
+            @Override
+            public void onData(SocketIOClient client, BidOnRequest data, AckRequest ackRequest) {
+                // serverの時間タイムスタンプを使わない感じになってしまった.....
+                subMember();
+                System.out.println("Client disconnected. Current members: " + member);
+                NotifyNumOfParticipantsResponse notify = new NotifyNumOfParticipantsResponse();
+                notify.number = member;
+                server.getBroadcastOperations().sendEvent("notify-num-of-participants",
+                        notify);
+            }
+        });
+
+        server.addEventListener("init-state", InitStateRequest.class, new DataListener<InitStateRequest>() {
             @Override
             public void onData(SocketIOClient client, InitStateRequest data, AckRequest ackRequest) {
                 InitStateResponse initResp = new InitStateResponse();
-
                 // items
                 int uid = userMap.get(data.user_name);
                 Map<String, Object> latestAuction = new HashMap<>();
@@ -111,7 +154,6 @@ public class AppServer {
                     initResp.current_item.setItem_name(
                             (String) scalar.getItem(auc_uid, initResp.current_item.item_id)
                                     .get("item_name"));
-                    // TODO ?
                     List<Object> allBids = new ArrayList<>();
                     allBids = scalar.getAllAuctionBids(auc_uid);
                     Object last = allBids.get(allBids.size() - 1);
@@ -120,6 +162,7 @@ public class AppServer {
                     initResp.current_item.history.setTime(time);
                     initResp.current_item.history.setUser_name((String) scalar.getUserInfo(auc_uid).get("user_name"));
                 } catch (TransactionException e) {
+                    System.out.println("error!");
                     e.printStackTrace();
                 }
 
@@ -127,11 +170,11 @@ public class AppServer {
                 initResp.setIs_exhibitor(isEx);
 
                 // scalar.getUserInfo(data.user_name);
-                // server.getBroadcastOperations().sendEvent("INIT_STATE", data);
-                client.sendEvent("INIT_STATE", initResp);
+                // server.getBroadcastOperations().sendEvent("init-state", data);
+                client.sendEvent("init-state", initResp);
             }
         });
-        server.addEventListener("RAISE_HAND", RaiseHandsRequest.class, new DataListener<RaiseHandsRequest>() {
+        server.addEventListener("raise-hands", RaiseHandsRequest.class, new DataListener<RaiseHandsRequest>() {
             @Override
             public void onData(SocketIOClient client, RaiseHandsRequest data, AckRequest ackRequest) {
 
@@ -159,7 +202,7 @@ public class AppServer {
                         System.out.println("error!");
                     }
 
-                    server.getBroadcastOperations().sendEvent("RAISE_HANDS", r_hands);
+                    server.getBroadcastOperations().sendEvent("raise-handsS", r_hands);
 
                     time = 120;
                     ScheduledExecutorService execService = Executors.newScheduledThreadPool(1);
@@ -177,7 +220,7 @@ public class AppServer {
                                     e.printStackTrace();
                                 }
 
-                                server.getBroadcastOperations().sendEvent("SUCCESSFUL_BID", success_bid);
+                                server.getBroadcastOperations().sendEvent("successful-bid", success_bid);
 
                                 execService.shutdown();
                             }
@@ -191,6 +234,8 @@ public class AppServer {
                     } catch (TransactionException e) {
                         e.printStackTrace();
                     }
+                    resetMember();
+                    server.getBroadcastOperations().sendEvent("RELOAD_MEMBER_ADD", data);
 
                 } else {
                     r_hands.setItem_id(0);
@@ -199,12 +244,13 @@ public class AppServer {
                     // r_hands.item_id = 0;
                     // r_hands.item_name = "";
                     // r_hands.user_id = 0;
-                    server.getBroadcastOperations().sendEvent("RAISE_HANDS", r_hands);
+                    server.getBroadcastOperations().sendEvent("raise-handsS", r_hands);
                 }
 
             }
         });
-        server.addEventListener("BID-ON", BidOnRequest.class, new DataListener<BidOnRequest>() {
+
+        server.addEventListener("bid-on", BidOnRequest.class, new DataListener<BidOnRequest>() {
             @Override
             public void onData(SocketIOClient client, BidOnRequest data, AckRequest ackRequest) {
                 // serverの時間タイムスタンプを使わない感じになってしまった.....
@@ -227,14 +273,15 @@ public class AppServer {
                     e.printStackTrace();
                 }
 
-                server.getBroadcastOperations().sendEvent("BID-ON", bidResp);
+                server.getBroadcastOperations().sendEvent("bid-on", bidResp);
             }
         });
 
         server.start();
+        System.out.println("test22");
 
-        Thread.sleep(Integer.MAX_VALUE);
+        // Thread.sleep(Integer.MAX_VALUE);
 
-        server.stop();
+        // server.stop();
     }
 }

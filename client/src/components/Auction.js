@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Socket, io } from "socket.io-client";
 import { Container, Button, List, ListItem, ListItemText, CircularProgress, Typography, Box, Grid, TextField, AppBar, Toolbar, Card, CardMedia, CardContent } from '@material-ui/core';
-import { createMuiTheme, ThemeProvider, makeStyles } from '@material-ui/core/styles';
+import { createTheme, ThemeProvider, makeStyles } from '@material-ui/core/styles';
 import NavigationBar from './NavigationBar';
 import PersonOutlineIcon from '@material-ui/icons/PersonOutline';
 import { ClassRounded } from '@material-ui/icons';
@@ -9,10 +9,11 @@ import ChatBubbleOutlineIcon from '@material-ui/icons/ChatBubbleOutline';
 import ChatBubble from './ChatBubble';
 import LinearProgressWithLabel from './LinearProgressWithLabel';
 
-const socket = io('http://localhost:3001');
+const socket = io('http://localhost:9092');
+// const socket = io();
 const DEFAULT_TIME = 120;
 
-const theme = createMuiTheme({
+const theme = createTheme({
     palette: {
         primary: {
             main: '#000000',
@@ -131,6 +132,7 @@ function Auction() {
     };
     let initNumParticipants = 5;
     let initExhibitorName = "exhibitor1";
+    let isFirst = true;
 
     const classes = useStyles();
     const [username, setUsername] = useState('');
@@ -145,7 +147,6 @@ function Auction() {
     const [exhibitorName, setExhibitorName] = useState(initExhibitorName);
     const [isExhibitor, setIsExhibitor] = useState(false);
     const [finalResult, setFinalResult] = useState({});
-
     const SocketConst = {
         INIT_STATE: 'init-state', 
         RAISE_HANDS: 'raise-hands',
@@ -160,6 +161,7 @@ function Auction() {
 
         socket.on(SocketConst.INIT_STATE, (data) => {
             //{items, user_id, remaining_time, current_item, is_exhibitor, (auction_history) }
+            console.log("ON: INIT_STATE");
             setUserItems(data.items);
             setUserId(data.user_id);
             setRemainingTime(data.remaining_time);
@@ -169,6 +171,7 @@ function Auction() {
 
         socket.on(SocketConst.RAISE_HANDS, (data) => {
             //{item_id, item_name, user_id} 
+            console.log("ON: RAISE_HANDS");
             setRemainingTime(DEFAULT_TIME);
             setPrice(0);
             setExhibitorName(data.user_name);
@@ -178,6 +181,7 @@ function Auction() {
         socket.on(SocketConst.BID_ON, (data) => {
             //{price, user_id, time}
             //もし全てのフィールドが0なら、入札失敗
+            console.log("ON: BID_ON");
             if(data.price === 0 && data.user_id === 0 && data.time === 0){
                 alert("Failed to bid");
             }else{
@@ -193,6 +197,7 @@ function Auction() {
         socket.on(SocketConst.SUCCESSFUL_BID, (data) => {
             //{price, user_id}
             //このイベントが発火された場合、数秒間結果の通知を表示した後で画面を更新する
+            console.log("ON: SUCCESSFUL_BID");
             setFinalResult(data);
             setTimeout(()=>{
                 alert("result : " + data.user_id + " won the auction with " + data.price + " yen");
@@ -202,11 +207,15 @@ function Auction() {
 
         socket.on(SocketConst.NOTIFY_NUM_OF_PARTICIPANTS, (data) => {
             //{num_participants}
+            console.log("ON: NOTIFY_NUM_OF_PARTICIPANTS");
             setNumParticipants(data.num_participants);
         });
 
-        socket.emit(SocketConst.INIT_STATE, {user_name: storedUsername});
-
+        if (isFirst) {
+            console.log("EMIT: INIT_STATE");
+            socket.emit(SocketConst.INIT_STATE, {user_name: storedUsername});
+            isFirst = false;
+        }
     }, []);
 
 

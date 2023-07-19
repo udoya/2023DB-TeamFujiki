@@ -2,12 +2,12 @@
 
 ## Required
 You have to prepare these applications or libraries.
-- Cassandra
+- [Cassandra](https://cassandra.apache.org/_/index.html)
 - React
-- Gradle
+- [Gradle](https://gradle.org/)
 
 ## Server
-We use Cassandra.
+We use Cassandra. Prepare and Launch Cassandra DB before the first run.
 
 ## How to start
 After clone this Project, move to "server" directory.

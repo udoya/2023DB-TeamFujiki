@@ -4,8 +4,8 @@
 You have to prepare these applications or libraries.
 - [Cassandra](https://cassandra.apache.org/_/index.html)
 - [Node.js](https://nodejs.org/ja)
-- npm
-- React
+- [npm](https://www.npmjs.com/)
+- [React](https://ja.legacy.reactjs.org/)
 - [Gradle](https://gradle.org/)
 
 ## Client

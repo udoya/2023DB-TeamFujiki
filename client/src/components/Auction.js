@@ -224,10 +224,12 @@ function Auction() {
             //{price, user_id}
             //このイベントが発火された場合、数秒間結果の通知を表示した後で画面を更新する
             console.log("ON: SUCCESSFUL_BID");
+            console.log("data", JSON.stringify(data))
             setFinalResult(data);
+            alert("result : " + data.user_id + " won the auction with " + data.price + " yen");
             setTimeout(()=>{
                 // alert("result : " + data.user_id + " won the auction with " + data.price + " yen");
-                window.location.reload(false);
+                // window.location.reload(false);
             }, 5000);
         });
 
@@ -260,7 +262,7 @@ function Auction() {
             alert("Please input higher price");
             return;
         }
-        if(inputBid > 0){
+        if(inputBid > 0 && username != exhibitorName && remainingTime > 0){
             //{price, user_id}
             console.log("EMIT: BID_ON")
             socket.emit(SocketConst.BID_ON, {price: inputBid, user_id: userid});
@@ -282,20 +284,22 @@ function Auction() {
                     <Grid item xs={12} md={6}>
                         { currentItem != null && (
                         <>
+                        { remainingTime > 0 ? (
                         <Typography variant="h5" gutterBottom>
-                        Current Item
-                        </Typography>
+                            Current Item
+                        </Typography>) : (
+                        <Typography variant="h5" gutterBottom>
+                            Previous Item
+                        </Typography>)}
+                        <Typography variant="h7" component="div">
+                            {currentItem.item_name}
+                            </Typography>
                         <Card className={classes.card}>
                         <CardMedia
                             className={classes.media}
                             image={`/images/${currentItem.user_id}_${currentItem.item_id}.png`}
                             title={currentItem.item_name}
                         />
-                        <CardContent>
-                            <Typography variant="h5" component="div">
-                            {currentItem.item_name}
-                            </Typography>
-                        </CardContent>
                         </Card>
                         <Typography variant="body1" gutterBottom>
                             Exhibitor: {exhibitorName}
@@ -320,9 +324,14 @@ function Auction() {
                         </Button></>)}
                     </Grid>
                     <Grid item xs={12} sm={6}>
+                    { remainingTime > 0 ? (
                     <Typography variant="h5" gutterBottom>
-                        Auction History
-                    </Typography>
+                        Current Auction History
+                    </Typography>) : (
+                    <Typography variant="h5" gutterBottom>
+                        Previous Auction History
+                    </Typography>)}
+                    
                     { currentItem != null && currentItem.history.length != 0 && (
                     <div className={classes.historyContainer}>
                         {currentItem.history.map((history, index) => (

@@ -497,50 +497,43 @@ public class ScalarOperations {
   public boolean placeBid(int auction_id, int user_id, int price)
       throws TransactionException {
     DistributedTransaction tx = manager.start();
+    boolean succeed = false;
     try {
-      boolean succeed = false;
       // 前回の値と比較
       Scan scan = Scan
           .newBuilder()
           .namespace(NAMESPACE)
           .table("bids")
           .partitionKey(Key.ofInt("auction_id", auction_id))
-          // .orderings(Scan.Ordering.desc("price"))
-          // .limit(1)
+          .orderings(Scan.Ordering.desc("bid_id"))
+          .limit(1)
           .build();
       List<Result> results = tx.scan(scan);
-      Result maxBid = results.get(0);
-      int maxPrice = maxBid.getInt("price");
-      for (int i = 1; i < results.size(); i++) {
-        int bidPrice = results.get(i).getInt("price");
-        if (maxPrice < bidPrice) {
-          maxPrice = bidPrice;
-          maxBid = results.get(i);
-        }
-      }
-
-      if (maxBid.getInt("price") < price) {
-        succeed = true;
-        Instant instant = Instant.now();
-        long currentTimestamp = instant.toEpochMilli();
-        Put put = Put
-            .newBuilder()
-            .namespace(NAMESPACE)
-            .table("bids")
-            .partitionKey(Key.ofInt("auction_id", auction_id))
-            .clusteringKey(Key.ofInt("bid_id", maxBid.getInt("bid_id") + 1))
-            .bigIntValue("time", currentTimestamp)
-            .intValue("user_id", user_id)
-            .intValue("price", price)
-            .build();
-
-        tx.put(put);
-
-        tx.commit();
+      int next_id;
+      if (results.isEmpty()) {
+        next_id = 1;
+      } else if (results.get(0).getInt("price") < price) {
+        next_id = results.get(0).getInt("bid_id") + 1;
       } else {
-        succeed = false;
         tx.abort();
+        return succeed;
       }
+      Instant instant = Instant.now();
+      long currentTimestamp = instant.toEpochMilli();
+      Put put = Put
+          .newBuilder()
+          .namespace(NAMESPACE)
+          .table("bids")
+          .partitionKey(Key.ofInt("auction_id", auction_id))
+          .clusteringKey(Key.ofInt("bid_id", next_id))
+          .bigIntValue("time", currentTimestamp)
+          .intValue("user_id", user_id)
+          .intValue("price", price)
+          .build();
+
+      tx.put(put);
+
+      tx.commit();
       return succeed;
     } catch (Exception e) {
       tx.abort();

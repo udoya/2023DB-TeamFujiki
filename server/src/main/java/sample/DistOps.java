@@ -19,11 +19,13 @@ import java.time.Instant;
 import java.util.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Random;
+import java.util.Set;
 
 public class DistOps {
 
@@ -44,18 +46,20 @@ public class DistOps {
   public void addUser(int user_id, String user_name)
     throws TransactionException {
     DistributedTransaction tx = manager.start();
-    int mod = user_id % 3;
+    int mod;
     try {
-      Put put = Put
-        .newBuilder()
-        .namespace(NAMESPACES[mod])
-        .table("users")
-        .partitionKey(Key.ofInt("user_id", user_id))
-        .textValue("user_name", user_name)
-        .build();
+      for (int i = 0; i < 2; i++) {
+        mod = (user_id + i) % 3;
+        Put put = Put
+          .newBuilder()
+          .namespace(NAMESPACES[mod])
+          .table("users")
+          .partitionKey(Key.ofInt("user_id", user_id))
+          .textValue("user_name", user_name)
+          .build();
 
-      tx.put(put);
-
+        tx.put(put);
+      }
       tx.commit();
     } catch (Exception e) {
       tx.abort();
@@ -71,20 +75,22 @@ public class DistOps {
     boolean is_sold
   ) throws TransactionException {
     DistributedTransaction tx = manager.start();
-    int mod = item_id % 3;
+    int mod;
     try {
-      Put put = Put
-        .newBuilder()
-        .namespace(NAMESPACES[mod])
-        .table("items")
-        .partitionKey(Key.ofInt("item_id", item_id))
-        .textValue("item_name", item_name)
-        .booleanValue("is_sold", is_sold)
-        .intValue("user_id", user_id)
-        .build();
+      for (int i = 0; i < 2; i++) {
+        mod = (item_id + i) % 3;
+        Put put = Put
+          .newBuilder()
+          .namespace(NAMESPACES[mod])
+          .table("items")
+          .partitionKey(Key.ofInt("item_id", item_id))
+          .textValue("item_name", item_name)
+          .booleanValue("is_sold", is_sold)
+          .intValue("user_id", user_id)
+          .build();
 
-      tx.put(put);
-
+        tx.put(put);
+      }
       tx.commit();
     } catch (Exception e) {
       tx.abort();
@@ -101,21 +107,23 @@ public class DistOps {
     int price
   ) throws TransactionException {
     DistributedTransaction tx = manager.start();
-    int mod = user_id % 3;
+    int mod;
     try {
-      Put put = Put
-        .newBuilder()
-        .namespace(NAMESPACES[mod])
-        .table("purchases")
-        .partitionKey(Key.ofInt("user_id", user_id))
-        .clusteringKey(Key.ofInt("purchase_id", purchase_id))
-        .intValue("auction_id", auction_id)
-        .textValue("item_name", item_name)
-        .intValue("price", price)
-        .build();
+      for (int i = 0; i < 2; i++) {
+        mod = (user_id + i) % 3;
+        Put put = Put
+          .newBuilder()
+          .namespace(NAMESPACES[mod])
+          .table("purchases")
+          .partitionKey(Key.ofInt("user_id", user_id))
+          .clusteringKey(Key.ofInt("purchase_id", purchase_id))
+          .intValue("auction_id", auction_id)
+          .textValue("item_name", item_name)
+          .intValue("price", price)
+          .build();
 
-      tx.put(put);
-
+        tx.put(put);
+      }
       tx.commit();
     } catch (Exception e) {
       tx.abort();
@@ -132,21 +140,23 @@ public class DistOps {
     long start_time
   ) throws TransactionException {
     DistributedTransaction tx = manager.start();
-    int mod = auction_id % 3;
+    int mod;
     try {
-      Put put = Put
-        .newBuilder()
-        .namespace(NAMESPACES[mod])
-        .table("auctions")
-        .partitionKey(Key.ofInt("auction_id", auction_id))
-        .intValue("user_id", user_id)
-        .intValue("item_id", item_id)
-        .intValue("attendee_count", attendee_count)
-        .bigIntValue("start_time", start_time)
-        .build();
+      for (int i = 0; i < 2; i++) {
+        mod = (auction_id + i) % 3;
+        Put put = Put
+          .newBuilder()
+          .namespace(NAMESPACES[mod])
+          .table("auctions")
+          .partitionKey(Key.ofInt("auction_id", auction_id))
+          .intValue("user_id", user_id)
+          .intValue("item_id", item_id)
+          .intValue("attendee_count", attendee_count)
+          .bigIntValue("start_time", start_time)
+          .build();
 
-      tx.put(put);
-
+        tx.put(put);
+      }
       tx.commit();
     } catch (Exception e) {
       tx.abort();
@@ -163,21 +173,23 @@ public class DistOps {
     long time
   ) throws TransactionException {
     DistributedTransaction tx = manager.start();
-    int mod = bid_id % 3;
+    int mod;
     try {
-      Put put = Put
-        .newBuilder()
-        .namespace(NAMESPACES[mod])
-        .table("bids")
-        .partitionKey(Key.ofInt("bid_id", bid_id))
-        .intValue("user_id", user_id)
-        .intValue("price", price)
-        .intValue("auction_id", auction_id)
-        .bigIntValue("time", time)
-        .build();
+      for (int i = 0; i < 2; i++) {
+        mod = (bid_id + i) % 3;
+        Put put = Put
+          .newBuilder()
+          .namespace(NAMESPACES[mod])
+          .table("bids")
+          .partitionKey(Key.ofInt("bid_id", bid_id))
+          .intValue("user_id", user_id)
+          .intValue("price", price)
+          .intValue("auction_id", auction_id)
+          .bigIntValue("time", time)
+          .build();
 
-      tx.put(put);
-
+        tx.put(put);
+      }
       tx.commit();
     } catch (Exception e) {
       tx.abort();
@@ -186,10 +198,10 @@ public class DistOps {
   }
 
   // ユーザ情報取得
-  public Map<String, Object> getUserInfo(int user_id)
-    throws TransactionException {
+  public Map<String, Object> getUserInfo(int user_id) throws Exception {
     DistributedTransaction tx = manager.start();
     int mod = user_id % 3;
+    Optional<Result> result;
     try {
       Get get = Get
         .newBuilder()
@@ -197,31 +209,49 @@ public class DistOps {
         .table("users")
         .partitionKey(Key.ofInt("user_id", user_id))
         .build();
-      Optional<Result> result = tx.get(get);
-
+      result = tx.get(get);
       tx.commit();
-      Map<String, Object> mapResult = new HashMap<String, Object>();
-      mapResult.put("user_id", result.get().getInt("user_id"));
-      mapResult.put("user_name", result.get().getText("user_name"));
-      return mapResult;
+    } catch (NoHostAvailableException e) {
+      mod = (user_id + 1) % 3;
+      try {
+        Get get = Get
+          .newBuilder()
+          .namespace(NAMESPACES[mod])
+          .table("users")
+          .partitionKey(Key.ofInt("user_id", user_id))
+          .build();
+        result = tx.get(get);
+        tx.commit();
+      } catch (Exception e) {
+        tx.abort();
+        throw e;
+      }
     } catch (Exception e) {
       tx.abort();
       throw e;
     }
+    Map<String, Object> mapResult = new HashMap<String, Object>();
+    mapResult.put("user_id", result.get().getInt("user_id"));
+    mapResult.put("user_name", result.get().getText("user_name"));
+    return mapResult;
   }
 
   // アイテム一覧取得
-  public List<Object> getAllUserItem(int user_id) throws TransactionException {
+  public List<Object> getAllUserItem(int user_id) throws Exception {
     DistributedTransaction tx = manager.start();
     List<Result> results = new ArrayList<>();
     try {
       for (int i = 0; i < 3; i++) {
-        Scan scan = Scan
-          .newBuilder()
-          .namespace(NAMESPACES[i])
-          .table("items")
-          .indexKey(Key.ofInt("user_id", user_id))
-          .build();
+        try {
+          Scan scan = Scan
+            .newBuilder()
+            .namespace(NAMESPACES[i])
+            .table("items")
+            .indexKey(Key.ofInt("user_id", user_id))
+            .build();
+        } catch (NoHostAvailableException e) {
+          continue;
+        }
         results.addAll(tx.scan(scan));
       }
       tx.commit();
@@ -229,21 +259,22 @@ public class DistOps {
       tx.abort();
       throw e;
     }
-    List<Object> values = new ArrayList<>();
+    Set<Integer> set = new HashSet<>();
     for (int i = 0; i < results.size(); i++) {
       Map<String, Object> mapResult = new HashMap<String, Object>();
       Result result = results.get(i);
       mapResult.put("item_id", result.getInt("item_id"));
       mapResult.put("item_name", result.getText("item_name"));
       mapResult.put("is_sold", result.getBoolean("is_sold"));
-      values.add(mapResult);
+      set.add(mapResult);
     }
+    List<Object> values = new ArrayList<>(set);
     return values;
   }
 
   // アイテム取得
   public Map<String, Object> getItem(int user_id, int item_id)
-    throws TransactionException {
+    throws Exception {
     DistributedTransaction tx = manager.start();
     int mod = item_id % 3;
     try {
@@ -256,16 +287,31 @@ public class DistOps {
       Optional<Result> result = tx.get(get);
 
       tx.commit();
-      Map<String, Object> mapResult = new HashMap<String, Object>();
-      mapResult.put("user_id", result.get().getInt("user_id"));
-      mapResult.put("item_id", result.get().getInt("item_id"));
-      mapResult.put("item_name", result.get().getText("item_name"));
-      mapResult.put("is_sold", result.get().getBoolean("is_sold"));
-      return mapResult;
+    } catch (NoHostAvailableException e) {
+      mod = (item_id + 1) % 3;
+      try {
+        Get get = Get
+          .newBuilder()
+          .namespace(NAMESPACES[mod])
+          .table("users")
+          .partitionKey(Key.ofInt("user_id", user_id))
+          .build();
+        result = tx.get(get);
+        tx.commit();
+      } catch (Exception e) {
+        tx.abort();
+        throw e;
+      }
     } catch (Exception e) {
       tx.abort();
       throw e;
     }
+    Map<String, Object> mapResult = new HashMap<String, Object>();
+    mapResult.put("user_id", result.get().getInt("user_id"));
+    mapResult.put("item_id", result.get().getInt("item_id"));
+    mapResult.put("item_name", result.get().getText("item_name"));
+    mapResult.put("is_sold", result.get().getBoolean("is_sold"));
+    return mapResult;
   }
 
   // 購入履歴取得
@@ -302,10 +348,10 @@ public class DistOps {
   }
 
   // オークション取得
-  public Map<String, Object> getAuction(int auction_id)
-    throws TransactionException {
+  public Map<String, Object> getAuction(int auction_id) throws Exception {
     DistributedTransaction tx = manager.start();
     int mod = auction_id % 3;
+    Optional<Result> result;
     try {
       Get get = Get
         .newBuilder()
@@ -313,35 +359,53 @@ public class DistOps {
         .table("auctions")
         .partitionKey(Key.ofInt("auction_id", auction_id))
         .build();
-      Optional<Result> result = tx.get(get);
-
+      result = tx.get(get);
       tx.commit();
-      Map<String, Object> mapResult = new HashMap<String, Object>();
-      mapResult.put("item_id", result.get().getInt("item_id"));
-      mapResult.put("user_id", result.get().getInt("user_id"));
-      mapResult.put("auction_id", result.get().getInt("auction_id"));
-      mapResult.put("attendee_count", result.get().getInt("attendee_count"));
-      mapResult.put("start_time", result.get().getBigInt("start_time"));
-      return mapResult;
+    } catch (NoHostAvailableException e) {
+      mod = (auction_id + 1) % 3;
+      try {
+        Get get = Get
+          .newBuilder()
+          .namespace(NAMESPACES[mod])
+          .table("auctions")
+          .partitionKey(Key.ofInt("auction_id", auction_id))
+          .build();
+        result = tx.get(get);
+        tx.commit();
+      } catch (Exception e) {
+        tx.abort();
+        throw e;
+      }
     } catch (Exception e) {
       tx.abort();
       throw e;
     }
+    Map<String, Object> mapResult = new HashMap<String, Object>();
+    mapResult.put("item_id", result.get().getInt("item_id"));
+    mapResult.put("user_id", result.get().getInt("user_id"));
+    mapResult.put("auction_id", result.get().getInt("auction_id"));
+    mapResult.put("attendee_count", result.get().getInt("attendee_count"));
+    mapResult.put("start_time", result.get().getBigInt("start_time"));
+    return mapResult;
   }
 
   // 最新オークション取得
-  public Map<String, Object> getLatestAuction() throws TransactionException {
+  public Map<String, Object> getLatestAuction() throws Exception {
     DistributedTransaction tx = manager.start();
     List<Result> results = new ArrayList<>();
     try {
       for (int i = 0; i < 3; i++) {
-        Scan scan = Scan
-          .newBuilder()
-          .namespace(NAMESPACES[i])
-          .table("auctions")
-          .all()
-          .build();
-        results.addAll(tx.scan(scan));
+        try {
+          Scan scan = Scan
+            .newBuilder()
+            .namespace(NAMESPACES[i])
+            .table("auctions")
+            .all()
+            .build();
+          results.addAll(tx.scan(scan));
+        } catch (NoHostAvailableException e) {
+          continue;
+        }
       }
       tx.commit();
     } catch (Exception e) {
@@ -374,13 +438,17 @@ public class DistOps {
     List<Result> results = new ArrayList<>();
     try {
       for (int i = 0; i < 3; i++) {
-        Scan scan = Scan
-          .newBuilder()
-          .namespace(NAMESPACES[i])
-          .table("bids")
-          .indexKey(Key.ofInt("auction_id", auction_id))
-          .build();
-        results.addAll(tx.scan(scan));
+        try {
+          Scan scan = Scan
+            .newBuilder()
+            .namespace(NAMESPACES[i])
+            .table("bids")
+            .indexKey(Key.ofInt("auction_id", auction_id))
+            .build();
+          results.addAll(tx.scan(scan));
+        } catch (NoHostAvailableException e) {
+          continue;
+        }
       }
       tx.commit();
     } catch (Exception e) {

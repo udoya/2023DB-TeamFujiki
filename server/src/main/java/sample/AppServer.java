@@ -250,8 +250,8 @@ public class AppServer {
                         r_hands.setItem_name((String) scalar.getItem(data.user_id, data.item_id).get("item_name"));
                         String user_name = (String) scalar.getUserInfo(data.user_id).get("user_name");
                         r_hands.setUser_name(user_name);
-                        //userMapのuser_name to idで変換
-                        r_hands.setUser_id((int)userMap.get(user_name));
+                        // userMapのuser_name to idで変換
+                        r_hands.setUser_id((int) userMap.get(user_name));
                         // r_hands.item_id = data.item_id;
                         // r_hands.item_name = (String) scalar.getItem(data.user_id,
                         // data.item_id).get("item_name");
@@ -316,22 +316,28 @@ public class AppServer {
             public void onData(SocketIOClient client, BidOnRequest data, AckRequest ackRequest) {
                 // serverの時間タイムスタンプを使わない感じになってしまった.....
                 BidOnResponse bidResp = new BidOnResponse();
-                int succeed = -1;
+                boolean succeed = false;
 
                 int auction_id = -1;
 
-                bidResp.setPrice(data.price);
-                bidResp.setTime(time);
-                bidResp.setUser_id(data.user_id);
                 // bidResp.price = data.price;
                 // bidResp.user_id = data.user_id;
                 // bidResp.time = time;
 
                 try {
                     auction_id = (int) scalar.getLatestAuction().get("auction_id");
-                    scalar.placeBid(auction_id, bidResp.user_id, bidResp.price);
+                    bidResp.setPrice(data.price);
+                    bidResp.setTime(time);
+                    bidResp.setUser_id(data.user_id);
+                    succeed = scalar.placeBid(auction_id, bidResp.user_id, bidResp.price);
                 } catch (TransactionException e) {
                     e.printStackTrace();
+                }
+
+                if (!succeed) {
+                    bidResp.setPrice(0);
+                    bidResp.setTime(0);
+                    bidResp.setUser_id(0);
                 }
 
                 server.getBroadcastOperations().sendEvent("bid-on", bidResp);

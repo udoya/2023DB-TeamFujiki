@@ -534,6 +534,7 @@ public class ScalarOperations {
       tx.put(put);
 
       tx.commit();
+      succeed = true;
       return succeed;
     } catch (Exception e) {
       tx.abort();

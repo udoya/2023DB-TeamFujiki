@@ -317,8 +317,8 @@ public class AppServer {
                 // serverの時間タイムスタンプを使わない感じになってしまった.....
                 BidOnResponse bidResp = new BidOnResponse();
                 boolean succeed = false;
-                System.out.println("price: "+ data.price);
-                System.out.println("user_id: "+ data.user_id);
+                System.out.println("price: " + data.price);
+                System.out.println("user_id: " + data.user_id);
 
                 int auction_id = -1;
 
@@ -332,6 +332,8 @@ public class AppServer {
                     bidResp.setTime(time);
                     bidResp.setUser_id(data.user_id);
                     succeed = scalar.placeBid(auction_id, bidResp.user_id, bidResp.price);
+                    System.out.print("succeed: ");
+                    System.out.println(succeed);
                 } catch (TransactionException e) {
                     e.printStackTrace();
                 }

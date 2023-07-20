@@ -60,7 +60,23 @@ public class AppServer {
         member = 0;
     }
 
-    public void resetFirstMember() { int auction_id; try { auction_id = (int) scalar.getLatestAuction().get("auction_id"); member = scalar.modifyAttendeeCount(auction_id, false); while (member > 0) { member = scalar.modifyAttendeeCount(auction_id, false); } } catch (TransactionException e) { auction_id = -1; System.out.println("error!!!"); e.printStackTrace(); } }
+    public void resetFirstMember() {
+        int auction_id;
+        try {
+            auction_id = (int) scalar.getLatestAuction().get("auction_id");
+            member = scalar.modifyAttendeeCount(auction_id, false);
+            while (member < 0) {
+                member = scalar.modifyAttendeeCount(auction_id, true);
+            }
+            while (member > 0) {
+                member = scalar.modifyAttendeeCount(auction_id, false);
+            }
+        } catch (TransactionException e) {
+            auction_id = -1;
+            System.out.println("error!!!");
+            e.printStackTrace();
+        }
+    }
 
     public void start() throws InterruptedException {
         // Hard codingで許してください
@@ -79,7 +95,7 @@ public class AppServer {
         System.out.println("test");
 
         resetFirstMember();
-        
+
         server.addConnectListener(new ConnectListener() {
             @Override
             public void onConnect(SocketIOClient client) {
@@ -163,14 +179,13 @@ public class AppServer {
                     long start_time = (long) latestAuction.get("start_time");
                     System.out.println("start_time: " + start_time);
                     Instant instant = Instant.now();
-                    long currentTimestamp = instant.toEpochMilli();    
+                    long currentTimestamp = instant.toEpochMilli();
                     long diff = currentTimestamp - start_time;
                     System.out.println("diff: " + diff);
-                    //diffをsecondに変換
+                    // diffをsecondに変換
                     diff = diff / 1000;
                     System.out.println("diff: " + diff);
                     initResp.setRemaining_time((int) diff);
-                    
 
                     current_item.setItem_id((int) latestAuction.get("item_id"));
                     current_item.setItem_name(
@@ -194,7 +209,7 @@ public class AppServer {
                         bid_time = start_time - bid_time;
                         bid_time = bid_time / 1000;
                         System.out.println("bid_time: " + bid_time);
-                        history.setTime((int)bid_time);
+                        history.setTime((int) bid_time);
                         history.setUser_name((String) scalar.getUserInfo(auc_uid).get("user_name"));
                         current_item.setHistory(history);
                     }
@@ -327,7 +342,7 @@ public class AppServer {
             time = 0;
             System.out.println("Server stopped and port released");
         }));
-        
+
         Thread.sleep(Integer.MAX_VALUE);
         // server.stop();
     }

@@ -428,9 +428,16 @@ public class ScalarOperations {
       Instant instant = Instant.now();
       long currentTimestamp = instant.toEpochMilli();
       boolean notAuctionNow =
-        currentTimestamp - startTimeStamp > (60 * 60 * 1000);
+        currentTimestamp - startTimeStamp > (2 * 1000);
       boolean is_sold = item.get().getBoolean("is_sold");
+
+      System.out.println("before if");
+      System.out.println("currentTimestamp: " + currentTimestamp);
+      System.out.println("startTimeStamp: " + startTimeStamp);
+      System.out.println("notAuctionNow: " + notAuctionNow);
+      System.out.println("is_sold: " + is_sold);
       if (!is_sold && notAuctionNow) {
+        System.out.println("in if");
         int auction_id = latestAuction.getInt("auction_id") + 1;
         Put put = Put
           .newBuilder()

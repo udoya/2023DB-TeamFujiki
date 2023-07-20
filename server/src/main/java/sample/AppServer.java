@@ -204,8 +204,8 @@ public class AppServer {
                     e.printStackTrace();
                 }
 
-                boolean isEx = (uid == (int) latestAuction.get("user_id"));
-                initResp.setIs_exhibitor(isEx);
+                // boolean isEx = (uid == (int) latestAuction.get("user_id"));
+                initResp.setIs_exhibitor(false);
 
                 // scalar.getUserInfo(data.user_name);
                 // server.getBroadcastOperations().sendEvent("init-state", data);
@@ -216,33 +216,40 @@ public class AppServer {
         server.addEventListener("raise-hands", RaiseHandsRequest.class, new DataListener<RaiseHandsRequest>() {
             @Override
             public void onData(SocketIOClient client, RaiseHandsRequest data, AckRequest ackRequest) {
-
+                System.out.println("ON: RAISE_HANDS");
                 int succeed = -1;
                 RaiseHandsResponse r_hands = new RaiseHandsResponse();
 
                 try {
+                    System.out.println("item_id" + data.item_id + " user_id" + data.user_id);
                     succeed = scalar.startAuction(data.item_id, data.user_id);
                 } catch (TransactionException e) {
                     succeed = -1;
                     e.printStackTrace();
                 }
+                System.out.println("====1====");
 
                 if (succeed != -1) {
                     try {
                         r_hands.setItem_id(data.item_id);
                         r_hands.setItem_name((String) scalar.getItem(data.user_id, data.item_id).get("item_name"));
-                        r_hands.setUser_name((String) scalar.getUserInfo(data.user_id).get("user_name"));
+                        String user_name = (String) scalar.getUserInfo(data.user_id).get("user_name");
+                        r_hands.setUser_name(user_name);
+                        //userMapのuser_name to idで変換
+                        r_hands.setUser_id((int)userMap.get(user_name));
                         // r_hands.item_id = data.item_id;
                         // r_hands.item_name = (String) scalar.getItem(data.user_id,
                         // data.item_id).get("item_name");
                         // r_hands.user_id = data.user_id;
+                        System.out.println("====2====");
                     } catch (TransactionException e) {
                         e.printStackTrace();
                         System.out.println("error!");
                     }
+                    System.out.println("====3====");
+                    server.getBroadcastOperations().sendEvent("raise-hands", r_hands);
 
-                    server.getBroadcastOperations().sendEvent("raise-handsS", r_hands);
-
+                    System.out.println("====4====");
                     time = 120;
                     ScheduledExecutorService execService = Executors.newScheduledThreadPool(1);
                     execService.scheduleAtFixedRate(new Runnable() {
@@ -274,7 +281,7 @@ public class AppServer {
                         e.printStackTrace();
                     }
                     resetMember();
-                    server.getBroadcastOperations().sendEvent("RELOAD_MEMBER_ADD", data);
+                    server.getBroadcastOperations().sendEvent("reload_member_add", data);
 
                 } else {
                     r_hands.setItem_id(0);
@@ -283,7 +290,7 @@ public class AppServer {
                     // r_hands.item_id = 0;
                     // r_hands.item_name = "";
                     // r_hands.user_id = 0;
-                    server.getBroadcastOperations().sendEvent("raise-handsS", r_hands);
+                    server.getBroadcastOperations().sendEvent("raise-hands", r_hands);
                 }
 
             }

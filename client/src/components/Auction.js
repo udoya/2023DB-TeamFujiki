@@ -159,13 +159,14 @@ function Auction() {
     const raiseHands = (item_id) => {
         //{item_id, user_id}
         if (isExhibitor) {
-            alert("You are the exhibitor");
+            alert("You are the previous exhibitor");
             return;
         }
         else if(remainingTime > 0){
             alert("Auction is not finished. Please wait for the result");
             return;
         }
+        console.log("EMIT: RAISE_HANDS")
         socket.emit(SocketConst.RAISE_HANDS, {item_id: item_id, user_id: userid});
     };
 
@@ -183,6 +184,8 @@ function Auction() {
             // setRemainingTime(data.remaining_time);
             if (data.remainingTime < DEFAULT_TIME){
                 setRemainingTime(DEFAULT_TIME - data.remaining_time);
+            }else{
+                setRemainingTime(0);
             }
             setCurrentItem(data.current_item);
             setIsExhibitor(data.is_exhibitor);
@@ -192,10 +195,11 @@ function Auction() {
         socket.on(SocketConst.RAISE_HANDS, (data) => {
             //{item_id, item_name, user_id} 
             console.log("ON: RAISE_HANDS");
+            console.log("data", JSON.stringify(data))
             setRemainingTime(DEFAULT_TIME);
             setPrice(0);
             setExhibitorName(data.user_name);
-            setCurrentItem({item_id: data.item_id, item_name: data.item_name});
+            setCurrentItem({item_id: data.item_id, item_name: data.item_name, user_id:data.user_id, history: []});
         });
 
         socket.on(SocketConst.BID_ON, (data) => {

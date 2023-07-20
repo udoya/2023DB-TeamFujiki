@@ -357,21 +357,12 @@ public class ScalarOperations {
     List<Result> results;
     try {
       Scan scan = Scan
-<<<<<<< HEAD
-        .newBuilder()
-        .namespace(NAMESPACE)
-        .table("bids")
-        .partitionKey(Key.ofInt("auction_id", auction_id))
-        // .orderings(Scan.Ordering.asc("time"))
-        .build();
-=======
           .newBuilder()
           .namespace(NAMESPACE)
           .table("bids")
           .partitionKey(Key.ofInt("auction_id", auction_id))
           // .orderings(Scan.Ordering.asc("time"))
           .build();
->>>>>>> feat/client
       results = tx.scan(scan);
       tx.commit();
     } catch (Exception e) {
@@ -508,15 +499,6 @@ public class ScalarOperations {
     try {
       // 前回の値と比較
       Scan scan = Scan
-<<<<<<< HEAD
-        .newBuilder()
-        .namespace(NAMESPACE)
-        .table("bids")
-        .partitionKey(Key.ofInt("auction_id", auction_id))
-        .orderings(Scan.Ordering.desc("bid_id"))
-        .limit(1)
-        .build();
-=======
           .newBuilder()
           .namespace(NAMESPACE)
           .table("bids")
@@ -524,7 +506,6 @@ public class ScalarOperations {
           .orderings(Scan.Ordering.desc("bid_id"))
           .limit(1)
           .build();
->>>>>>> feat/client
       List<Result> results = tx.scan(scan);
       int next_id;
       if (results.isEmpty()) {
@@ -533,26 +514,11 @@ public class ScalarOperations {
         next_id = results.get(0).getInt("bid_id") + 1;
       } else {
         tx.abort();
-<<<<<<< HEAD
-        return;
-=======
         return succeed;
->>>>>>> feat/client
       }
       Instant instant = Instant.now();
       long currentTimestamp = instant.toEpochMilli();
       Put put = Put
-<<<<<<< HEAD
-        .newBuilder()
-        .namespace(NAMESPACE)
-        .table("bids")
-        .partitionKey(Key.ofInt("auction_id", auction_id))
-        .clusteringKey(Key.ofInt("bid_id", next_id))
-        .bigIntValue("time", currentTimestamp)
-        .intValue("user_id", user_id)
-        .intValue("price", price)
-        .build();
-=======
           .newBuilder()
           .namespace(NAMESPACE)
           .table("bids")
@@ -562,16 +528,12 @@ public class ScalarOperations {
           .intValue("user_id", user_id)
           .intValue("price", price)
           .build();
->>>>>>> feat/client
 
       tx.put(put);
 
       tx.commit();
-<<<<<<< HEAD
-=======
       succeed = true;
       return succeed;
->>>>>>> feat/client
     } catch (Exception e) {
       tx.abort();
       throw e;
@@ -625,15 +587,6 @@ public class ScalarOperations {
       tx.put(put1);
 
       Scan scan2 = Scan
-<<<<<<< HEAD
-        .newBuilder()
-        .namespace(NAMESPACE)
-        .table("bids")
-        .partitionKey(Key.ofInt("auction_id", auction_id))
-        // .orderings(Scan.Ordering.desc("price"))
-        // .limit(1)
-        .build();
-=======
           .newBuilder()
           .namespace(NAMESPACE)
           .table("bids")
@@ -641,7 +594,6 @@ public class ScalarOperations {
           // .orderings(Scan.Ordering.desc("price"))
           // .limit(1)
           .build();
->>>>>>> feat/client
       results = tx.scan(scan2);
       Result maxBid = results.get(0);
       long maxTime = maxBid.getBigInt("time");

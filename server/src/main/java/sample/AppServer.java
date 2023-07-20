@@ -135,6 +135,7 @@ public class AppServer {
                 InitStateResponse initResp = new InitStateResponse();
                 // items
                 System.out.println("ON: INIT_STATE");
+                System.out.println("data.user_name: " + data.user_name);
                 int uid = userMap.get(data.user_name);
                 Map<String, Object> latestAuction = new HashMap<>();
                 List<Object> userItems = new ArrayList<>();
@@ -158,15 +159,9 @@ public class AppServer {
                 try {
                     InitStateResponse.CurrentItem current_item = initResp.new CurrentItem();
                     int auc_uid = (int) latestAuction.get("user_id");
-                    System.out.println("=====1=====");
-                    current_item.setItem_id((int) latestAuction.get("item_id"));
-                    System.out.println("=====2=====");
-                    current_item.setItem_name(
-                            (String) scalar.getItem(auc_uid, current_item.item_id)
-                                    .get("item_name"));
-                    System.out.println("=====3=====");
 
-                    long start_time = (int) latestAuction.get("start_time");
+                    long start_time = (long) latestAuction.get("start_time");
+                    System.out.println("start_time: " + start_time);
                     Instant instant = Instant.now();
                     long currentTimestamp = instant.toEpochMilli();    
                     long diff = currentTimestamp - start_time;
@@ -175,32 +170,34 @@ public class AppServer {
                     diff = diff / 1000;
                     System.out.println("diff: " + diff);
                     initResp.setRemaining_time((int) diff);
-                    int auc_uid = (int) latestAuction.get("user_id");
+                    
 
-                    initResp.current_item.setItem_id((int) latestAuction.get("item_id"));
-                    initResp.current_item.setItem_name(
-                            (String) scalar.getItem(auc_uid, initResp.current_item.item_id)
+                    current_item.setItem_id((int) latestAuction.get("item_id"));
+                    current_item.setItem_name(
+                            (String) scalar.getItem(auc_uid, current_item.item_id)
                                     .get("item_name"));
+                    current_item.setUser_id(
+                            (int) scalar.getItem(auc_uid, current_item.item_id)
+                                    .get("user_id"));
+
                     List<Object> allBids = new ArrayList<>();
                     allBids = scalar.getAllAuctionBids(auc_uid);
-                    //allBidsの表示
-                    // for (int i = 0; i < allBids.size(); i++) {
-                    //     System.out.println("allBids[" + i + "]:" + allBids.get(i));
-                    // }
-                    System.out.println("=====4=====");
-                    System.out.println("=====5=====");
+                    // allBidsの表示
+                    for (int i = 0; i < allBids.size(); i++) {
+                        System.out.println("allBids[" + i + "]:" + allBids.get(i));
+                    }
                     for (int i = 0; i < allBids.size(); i++) {
                         InitStateResponse.CurrentItem.History history = current_item.new History();
                         history.setPrice((int) ((Map<String, Object>) allBids.get(i)).get("price"));
-                        // long bid_time = (long) ((Map<String, Object>) allBids.get(i)).get("time");
-                        // long bid_time = (long) ((Map<String, Object>) allBids.get(i)).get("time");
-                        // bid_time = bid_time / 1000;
-
-                        history.setTime(((Map<String, Object>) allBids.get(i)).get("time"));
+                        long bid_time = (long) ((Map<String, Object>) allBids.get(i)).get("time");
+                        // bid_timeを生年月日に変更
+                        bid_time = start_time - bid_time;
+                        bid_time = bid_time / 1000;
+                        System.out.println("bid_time: " + bid_time);
+                        history.setTime((int)bid_time);
                         history.setUser_name((String) scalar.getUserInfo(auc_uid).get("user_name"));
                         current_item.setHistory(history);
                     }
-                    System.out.println("=====6=====");
                     initResp.setCurrent_item(current_item);
                 } catch (TransactionException e) {
                     System.out.println("error!");

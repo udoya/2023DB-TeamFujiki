@@ -1,0 +1,31 @@
+{
+    "items": [
+        {
+            "item_id": 1,
+            "is_sold": true,
+            "item_name": "Painting: Sunset on the Beach"
+        },
+        {
+            "item_id": 2,
+            "is_sold": false,
+            "item_name": "Antique Pocket Watch: Gold-plated"
+        },
+        {
+            "item_id": 3,
+            "is_sold": false,
+            "item_name": "Sports Memorabilia: Signed Baseball"
+        }
+    ],
+    "user_id": 1,
+    "remaining_time": 0,
+    "current_item": {
+        "item_name": "Painting: Sunset on the Beach",
+        "item_id": 1,
+        "history": {
+            "user_name": "John",
+            "price": 15000,
+            "time": 0
+        }
+    },
+    "is_exhibitor": true
+}

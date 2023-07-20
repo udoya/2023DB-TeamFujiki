@@ -7,6 +7,8 @@ import com.scalar.db.exception.transaction.TransactionException;
 
 import classes.*;
 
+import java.time.Instant;
+
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
@@ -58,6 +60,8 @@ public class AppServer {
         member = 0;
     }
 
+    public void resetFirstMember() { int auction_id; try { auction_id = (int) scalar.getLatestAuction().get("auction_id"); member = scalar.modifyAttendeeCount(auction_id, false); while (member > 0) { member = scalar.modifyAttendeeCount(auction_id, false); } } catch (TransactionException e) { auction_id = -1; System.out.println("error!!!"); e.printStackTrace(); } }
+
     public void start() throws InterruptedException {
         // Hard codingで許してください
         userMap.put("John", 1);
@@ -66,19 +70,20 @@ public class AppServer {
         scalar = new ScalarOperations();
         Configuration config = new Configuration();
         config.setHostname("localhost");
-        config.setPort(10100);
-        config.setOrigin("*");
-        //websocket
-        config.setTransports(Transport.WEBSOCKET);
+        config.setPort(10200);
+        // config.setOrigin("*");
+        // //websocket
+        // config.setTransports(Transport.WEBSOCKET);
         SocketIOServer server = new SocketIOServer(config);
 
         System.out.println("test");
 
+        resetFirstMember();
+        
         server.addConnectListener(new ConnectListener() {
             @Override
             public void onConnect(SocketIOClient client) {
                 addMember();
-
                 System.out.println("Client connected. Current members: " + member);
                 NotifyNumOfParticipantsResponse notify = new NotifyNumOfParticipantsResponse();
                 notify.number = member;
@@ -129,6 +134,7 @@ public class AppServer {
             public void onData(SocketIOClient client, InitStateRequest data, AckRequest ackRequest) {
                 InitStateResponse initResp = new InitStateResponse();
                 // items
+                System.out.println("ON: INIT_STATE");
                 int uid = userMap.get(data.user_name);
                 Map<String, Object> latestAuction = new HashMap<>();
                 List<Object> userItems = new ArrayList<>();
@@ -142,25 +148,60 @@ public class AppServer {
                 }
 
                 // NOTE: 無理やりDBとマッピングさせた
+                System.out.println("userItems: " + userItems);
                 initResp.items = userItems;
 
                 initResp.setUser_id(uid);
 
-                initResp.setRemaining_time(time);
-
+                System.out.println("initResp: " + initResp);
+                System.out.println("initResp.current_item: " + initResp.current_item);
                 try {
+                    InitStateResponse.CurrentItem current_item = initResp.new CurrentItem();
                     int auc_uid = (int) latestAuction.get("user_id");
+                    System.out.println("=====1=====");
+                    current_item.setItem_id((int) latestAuction.get("item_id"));
+                    System.out.println("=====2=====");
+                    current_item.setItem_name(
+                            (String) scalar.getItem(auc_uid, current_item.item_id)
+                                    .get("item_name"));
+                    System.out.println("=====3=====");
+
+                    long start_time = (int) latestAuction.get("start_time");
+                    Instant instant = Instant.now();
+                    long currentTimestamp = instant.toEpochMilli();    
+                    long diff = currentTimestamp - start_time;
+                    System.out.println("diff: " + diff);
+                    //diffをsecondに変換
+                    diff = diff / 1000;
+                    System.out.println("diff: " + diff);
+                    initResp.setRemaining_time((int) diff);
+                    int auc_uid = (int) latestAuction.get("user_id");
+
                     initResp.current_item.setItem_id((int) latestAuction.get("item_id"));
                     initResp.current_item.setItem_name(
                             (String) scalar.getItem(auc_uid, initResp.current_item.item_id)
                                     .get("item_name"));
                     List<Object> allBids = new ArrayList<>();
                     allBids = scalar.getAllAuctionBids(auc_uid);
-                    Object last = allBids.get(allBids.size() - 1);
+                    //allBidsの表示
+                    // for (int i = 0; i < allBids.size(); i++) {
+                    //     System.out.println("allBids[" + i + "]:" + allBids.get(i));
+                    // }
+                    System.out.println("=====4=====");
+                    System.out.println("=====5=====");
+                    for (int i = 0; i < allBids.size(); i++) {
+                        InitStateResponse.CurrentItem.History history = current_item.new History();
+                        history.setPrice((int) ((Map<String, Object>) allBids.get(i)).get("price"));
+                        // long bid_time = (long) ((Map<String, Object>) allBids.get(i)).get("time");
+                        // long bid_time = (long) ((Map<String, Object>) allBids.get(i)).get("time");
+                        // bid_time = bid_time / 1000;
 
-                    initResp.current_item.history.setPrice((int) last);
-                    initResp.current_item.history.setTime(time);
-                    initResp.current_item.history.setUser_name((String) scalar.getUserInfo(auc_uid).get("user_name"));
+                        history.setTime(((Map<String, Object>) allBids.get(i)).get("time"));
+                        history.setUser_name((String) scalar.getUserInfo(auc_uid).get("user_name"));
+                        current_item.setHistory(history);
+                    }
+                    System.out.println("=====6=====");
+                    initResp.setCurrent_item(current_item);
                 } catch (TransactionException e) {
                     System.out.println("error!");
                     e.printStackTrace();
@@ -174,6 +215,7 @@ public class AppServer {
                 client.sendEvent("init-state", initResp);
             }
         });
+
         server.addEventListener("raise-hands", RaiseHandsRequest.class, new DataListener<RaiseHandsRequest>() {
             @Override
             public void onData(SocketIOClient client, RaiseHandsRequest data, AckRequest ackRequest) {
@@ -283,6 +325,9 @@ public class AppServer {
         // Thread.sleep(Integer.MAX_VALUE);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             server.stop();
+            member = 0;
+            resetFirstMember();
+            time = 0;
             System.out.println("Server stopped and port released");
         }));
         

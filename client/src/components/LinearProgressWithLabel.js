@@ -7,7 +7,7 @@ const useStyles = makeStyles((theme) => ({
     position: 'fixed',
     width: '100%',
     zIndex: theme.zIndex.drawer + 1,
-    top: '64px', // Position it right below the AppBar
+    top: '59px', // Position it right below the AppBar
   },
   colorPrimary: {
     backgroundColor: theme.palette.success.light, // Change color to green

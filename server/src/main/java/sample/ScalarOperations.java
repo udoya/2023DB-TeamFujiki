@@ -367,7 +367,7 @@ public class ScalarOperations {
         .namespace(NAMESPACE)
         .table("bids")
         .partitionKey(Key.ofInt("auction_id", auction_id))
-        .orderings(Scan.Ordering.asc("time"))
+        // .orderings(Scan.Ordering.asc("time"))
         .build();
       results = tx.scan(scan);
       tx.commit();
@@ -502,21 +502,32 @@ public class ScalarOperations {
         .namespace(NAMESPACE)
         .table("bids")
         .partitionKey(Key.ofInt("auction_id", auction_id))
-        .orderings(Scan.Ordering.desc("price"))
-        .limit(1)
+        // .orderings(Scan.Ordering.desc("price"))
+        // .limit(1)
         .build();
       List<Result> results = tx.scan(scan);
+      Result maxBid = results.get(0);
+      int maxPrice = maxBid.getInt("price");
+      for (int i = 1; i < results.size(); i++) {
+        int bidPrice = results.get(i).getInt("price");
+        if (maxPrice < bidPrice) {
+          maxPrice = bidPrice;
+          maxBid = results.get(i);
+        }
+      }
 
-      if (results.get(0).getInt("price") < price) {
+      if (maxBid.getInt("price") < price) {
+        Instant instant = Instant.now();
+        long currentTimestamp = instant.toEpochMilli();
         Put put = Put
           .newBuilder()
           .namespace(NAMESPACE)
           .table("bids")
-          .partitionKey(
-            Key.ofInt("bid_id", results.get(0).getInt("bid_id") + 1)
-          )
-          .clusteringKey(Key.ofInt("auction_id", auction_id))
-          .intValue("start_time", 0)
+          .partitionKey(Key.ofInt("auction_id", auction_id))
+          .clusteringKey(Key.ofInt("bid_id", maxBid.getInt("bid_id") + 1))
+          .bigIntValue("time", currentTimestamp)
+          .intValue("user_id", user_id)
+          .intValue("price", price)
           .build();
 
         tx.put(put);
@@ -582,11 +593,19 @@ public class ScalarOperations {
         .namespace(NAMESPACE)
         .table("bids")
         .partitionKey(Key.ofInt("auction_id", auction_id))
-        .orderings(Scan.Ordering.desc("price"))
-        .limit(1)
+        // .orderings(Scan.Ordering.desc("price"))
+        // .limit(1)
         .build();
       results = tx.scan(scan2);
       Result maxBid = results.get(0);
+      long maxTime = maxBid.getBigInt("time");
+      for (int i = 1; i < results.size(); i++) {
+        long time = results.get(i).getBigInt("time");
+        if (maxTime < time) {
+          maxTime = time;
+          maxBid = results.get(i);
+        }
+      }
       int user_id = maxBid.getInt("user_id");
       int price = maxBid.getInt("price");
       mapResult.put("user_id", user_id);

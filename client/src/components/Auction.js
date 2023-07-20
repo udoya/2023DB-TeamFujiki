@@ -8,8 +8,8 @@ import { ClassRounded } from '@material-ui/icons';
 import ChatBubbleOutlineIcon from '@material-ui/icons/ChatBubbleOutline';
 import ChatBubble from './ChatBubble';
 import LinearProgressWithLabel from './LinearProgressWithLabel';
-
-const socket = io('http://localhost:10100');
+const ENDPOINT = "http://localhost:10200";
+const socket = io(ENDPOINT);
 // const socket = io();
 const DEFAULT_TIME = 120;
 
@@ -82,7 +82,6 @@ const useStyles = makeStyles((theme) => ({
         paddingTop: theme.spacing(1),
         paddingBottom: theme.spacing(1),
     },
-    
 }));
 
 function Auction() {
@@ -136,17 +135,19 @@ function Auction() {
 
     const classes = useStyles();
     const [username, setUsername] = useState('');
-    const [userid, setUserId] = useState(inituserId);
-    const [userItems, setUserItems] = useState(init_userItems);
+    const [userid, setUserId] = useState(1);
+    const [userItems, setUserItems] = useState(null);
     const [remainingTime, setRemainingTime] = useState(100);
     const [inputBid, setInputBid] = useState(0);
-    const [currentItem, setCurrentItem] = useState(initCurrentItem);
-    const [auctionHistory, setAuctionHistory] = useState([]);
+    const [currentItem, setCurrentItem] = useState(null);
+    const [auctionHistory, setAuctionHistory] = useState(null);
     const [price, setPrice] = useState(0);
-    const [numParticipants, setNumParticipants] = useState(initNumParticipants);
-    const [exhibitorName, setExhibitorName] = useState(initExhibitorName);
+    const [numParticipants, setNumParticipants] = useState(0);
+    const [exhibitorName, setExhibitorName] = useState("John");
     const [isExhibitor, setIsExhibitor] = useState(false);
-    const [finalResult, setFinalResult] = useState({});
+    const [finalResult, setFinalResult] = useState(null);
+
+
     const SocketConst = {
         INIT_STATE: 'init-state', 
         RAISE_HANDS: 'raise-hands',
@@ -155,18 +156,37 @@ function Auction() {
         NOTIFY_NUM_OF_PARTICIPANTS: 'notify-num-of-participants'
     };
 
+    const raiseHands = (item_id) => {
+        //{item_id, user_id}
+        if (isExhibitor) {
+            alert("You are the exhibitor");
+            return;
+        }
+        else if(remainingTime > 0){
+            alert("Auction is not finished. Please wait for the result");
+            return;
+        }
+        socket.emit(SocketConst.RAISE_HANDS, {item_id: item_id, user_id: userid});
+    };
+
     useEffect(() => {
+        if (isFirst) {
         const storedUsername = localStorage.getItem('username');
         setUsername(storedUsername || '');
 
         socket.on(SocketConst.INIT_STATE, (data) => {
             //{items, user_id, remaining_time, current_item, is_exhibitor, (auction_history) }
             console.log("ON: INIT_STATE");
+            console.log("data", JSON.stringify(data))
             setUserItems(data.items);
             setUserId(data.user_id);
-            setRemainingTime(data.remaining_time);
+            // setRemainingTime(data.remaining_time);
+            if (data.remainingTime < DEFAULT_TIME){
+                setRemainingTime(DEFAULT_TIME - data.remaining_time);
+            }
             setCurrentItem(data.current_item);
             setIsExhibitor(data.is_exhibitor);
+            console.log("data.current_item.history", data.current_item.history)
         });
 
         socket.on(SocketConst.RAISE_HANDS, (data) => {
@@ -211,7 +231,6 @@ function Auction() {
             setNumParticipants(data.num_participants);
         });
 
-        if (isFirst) {
             console.log("EMIT: INIT_STATE");
             socket.emit(SocketConst.INIT_STATE, {user_name: storedUsername});
             isFirst = false;
@@ -253,6 +272,8 @@ function Auction() {
             <Container maxWidth="lg">
                 <Grid container spacing={1}>
                     <Grid item xs={12} md={6}>
+                        { currentItem != null && (
+                        <>
                         <Typography variant="h5" gutterBottom>
                         Current Item
                         </Typography>
@@ -288,20 +309,22 @@ function Auction() {
                         />
                         <Button variant="contained" color="secondary" className={classes.bidButton} onClick={handleBid}>
                             Bid
-                        </Button>
+                        </Button></>)}
                     </Grid>
                     <Grid item xs={12} sm={6}>
                     <Typography variant="h5" gutterBottom>
                         Auction History
                     </Typography>
+                    { currentItem != null && currentItem.history.length != 0 && (
                     <div className={classes.historyContainer}>
                         {currentItem.history.map((history, index) => (
                             <ChatBubble key={index} history={history} />
                         ))}
-                    </div>
+                    </div>)}
                     <Typography variant="h5" gutterBottom>
                         My Items
                     </Typography>
+                    { userItems != null && userItems.length != 0 && (
                     <Box className={classes.itemContainer}>
                         {userItems.map((item, index) => (
                             <Card key={index} className={classes.auctionItem}>
@@ -315,7 +338,7 @@ function Auction() {
                                 {item.item_name}
                             </Typography>
                             {item.is_sold == 0 ? (
-                            <Button variant="contained" color="primary">
+                            <Button variant="contained" color="primary" onClick={() => {raiseHands(item.item_id)}}>
                                 Start Auction
                             </Button>
                             ) : (
@@ -326,7 +349,7 @@ function Auction() {
                             </CardContent>
                         </Card>
                         ))}
-                        </Box>
+                        </Box>)}
                     </Grid>
                 </Grid>
             </Container>

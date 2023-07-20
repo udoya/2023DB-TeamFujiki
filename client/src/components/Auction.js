@@ -206,8 +206,10 @@ function Auction() {
             //{price, user_id, time}
             //もし全てのフィールドが0なら、入札失敗
             console.log("ON: BID_ON");
+            console.log("data", JSON.stringify(data))
             if(data.price === 0 && data.user_id === 0 && data.time === 0){
-                alert("Failed to bid");
+                // alert("Failed to bid");
+                console.log("Failed to bid");
             }else{
                 setPrice(data.price);
                 setRemainingTime(data.time);
@@ -224,7 +226,7 @@ function Auction() {
             console.log("ON: SUCCESSFUL_BID");
             setFinalResult(data);
             setTimeout(()=>{
-                alert("result : " + data.user_id + " won the auction with " + data.price + " yen");
+                // alert("result : " + data.user_id + " won the auction with " + data.price + " yen");
                 window.location.reload(false);
             }, 5000);
         });
@@ -253,12 +255,14 @@ function Auction() {
     }, [remainingTime]);
 
     const handleBid = () => {
+        console.log("handleBid");
         if(inputBid <= price){
             alert("Please input higher price");
             return;
         }
         if(inputBid > 0){
             //{price, user_id}
+            console.log("EMIT: BID_ON")
             socket.emit(SocketConst.BID_ON, {price: inputBid, user_id: userid});
         }
     };
@@ -284,7 +288,7 @@ function Auction() {
                         <Card className={classes.card}>
                         <CardMedia
                             className={classes.media}
-                            image={`/images/${userid}_${currentItem.item_id}.png`}
+                            image={`/images/${currentItem.user_id}_${currentItem.item_id}.png`}
                             title={currentItem.item_name}
                         />
                         <CardContent>

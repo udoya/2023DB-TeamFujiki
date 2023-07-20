@@ -317,6 +317,8 @@ public class AppServer {
                 // serverの時間タイムスタンプを使わない感じになってしまった.....
                 BidOnResponse bidResp = new BidOnResponse();
                 boolean succeed = false;
+                System.out.println("price: "+ data.price);
+                System.out.println("user_id: "+ data.user_id);
 
                 int auction_id = -1;
 

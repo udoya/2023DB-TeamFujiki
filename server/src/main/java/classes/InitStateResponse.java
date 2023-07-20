@@ -25,6 +25,10 @@ public class InitStateResponse {
         this.user_id = user_id;
     }
 
+    public void setCurrent_item(CurrentItem current_item) {
+        this.current_item = current_item;
+    }
+
     public class Item {
         public String item_name;
         public int item_id;
@@ -46,7 +50,8 @@ public class InitStateResponse {
     public class CurrentItem {
         public String item_name;
         public int item_id;
-        public History history;
+        public int user_id;
+        public List<History> history = new java.util.ArrayList<History>();
 
         public class History {
             public String user_name;
@@ -70,8 +75,16 @@ public class InitStateResponse {
             this.item_id = item_id;
         }
 
+        public void setUser_id(int user_id) {
+            this.user_id = user_id;
+        }
+
         public void setItem_name(String item_name) {
             this.item_name = item_name;
+        }
+
+        public void setHistory(History his) {
+            this.history.add(his);
         }
 
     }

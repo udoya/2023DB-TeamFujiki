@@ -54,4 +54,4 @@ If you are able to run both the client and server, you can log in at the localho
 1. Bob
 1. Emma
 
-Once logged in, you can list your items in order of earliest to latest, and other participants can bid on them.
+Once logged in, you can sell your own items in order of earliest to latest, and participants other than the seller can bid on them.

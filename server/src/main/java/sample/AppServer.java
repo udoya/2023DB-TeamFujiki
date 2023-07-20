@@ -20,9 +20,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.corundumstudio.socketio.*;
 import com.corundumstudio.socketio.listener.*;
-import com.corundumstudio.socketio.AckRequest;
-import com.corundumstudio.socketio.SocketIOClient;
-import com.corundumstudio.socketio.SocketIOServer;
 
 public class AppServer {
     static ScalarOperations scalar;
@@ -276,7 +273,10 @@ public class AppServer {
                                 SuccessfulBidResponse success_bid = new SuccessfulBidResponse();
 
                                 try {
-                                    scalar.processWinningBid();
+                                    Map<String, Object> mapResult = new HashMap<>();
+                                    mapResult = scalar.processWinningBid();
+                                    success_bid.setPrice((int) mapResult.get("price"));
+                                    success_bid.setUser_id((int) mapResult.get("user_id"));
                                 } catch (TransactionException e) {
                                     e.printStackTrace();
                                 }

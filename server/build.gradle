@@ -18,8 +18,8 @@ dependencies {
     implementation 'org.slf4j:slf4j-simple:1.7.30'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.0'
     implementation 'com.corundumstudio.socketio:netty-socketio:2.0.2'
+    implementation 'com.datastax.cassandra:cassandra-driver-core:3.9.0'
     // implementation 'com.corundumstudio.socketio:netty-socketio:1.7.1'
-
 }
 
 configurations.all {

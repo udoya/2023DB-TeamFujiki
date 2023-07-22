@@ -1,5 +1,6 @@
 package sample;
 
+import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.scalar.db.api.DistributedTransaction;
 import com.scalar.db.api.DistributedTransactionAdmin;
 import com.scalar.db.api.DistributedTransactionManager;
@@ -222,9 +223,9 @@ public class DistOps {
           .build();
         result = tx.get(get);
         tx.commit();
-      } catch (Exception e) {
+      } catch (Exception e2) {
         tx.abort();
-        throw e;
+        throw e2;
       }
     } catch (Exception e) {
       tx.abort();
@@ -249,17 +250,17 @@ public class DistOps {
             .table("items")
             .indexKey(Key.ofInt("user_id", user_id))
             .build();
+          results.addAll(tx.scan(scan));
         } catch (NoHostAvailableException e) {
           continue;
         }
-        results.addAll(tx.scan(scan));
       }
       tx.commit();
     } catch (Exception e) {
       tx.abort();
       throw e;
     }
-    Set<Integer> set = new HashSet<>();
+    Set<Map> set = new HashSet<>();
     for (int i = 0; i < results.size(); i++) {
       Map<String, Object> mapResult = new HashMap<String, Object>();
       Result result = results.get(i);
@@ -276,6 +277,7 @@ public class DistOps {
   public Map<String, Object> getItem(int user_id, int item_id)
     throws Exception {
     DistributedTransaction tx = manager.start();
+    Optional<Result> result;
     int mod = item_id % 3;
     try {
       Get get = Get
@@ -284,7 +286,7 @@ public class DistOps {
         .table("items")
         .partitionKey(Key.ofInt("item_id", item_id))
         .build();
-      Optional<Result> result = tx.get(get);
+      result = tx.get(get);
 
       tx.commit();
     } catch (NoHostAvailableException e) {
@@ -298,9 +300,9 @@ public class DistOps {
           .build();
         result = tx.get(get);
         tx.commit();
-      } catch (Exception e) {
+      } catch (Exception err) {
         tx.abort();
-        throw e;
+        throw err;
       }
     } catch (Exception e) {
       tx.abort();
@@ -372,9 +374,9 @@ public class DistOps {
           .build();
         result = tx.get(get);
         tx.commit();
-      } catch (Exception e) {
+      } catch (Exception err) {
         tx.abort();
-        throw e;
+        throw err;
       }
     } catch (Exception e) {
       tx.abort();
